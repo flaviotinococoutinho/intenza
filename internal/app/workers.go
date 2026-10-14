@@ -252,7 +252,7 @@ func NewFanout(m *Market, back Backoffice, inbox Inbox, k int, seed uint64, log 
 
 // Handle processes one intent.published event, at most once.
 func (f *Fanout) Handle(ctx context.Context, eventID, intentID string) error {
-	_, err := f.Inbox.Once(ctx, "fanout", eventID, func(ctx context.Context, tx Tx) error {
+	ran, err := f.Inbox.Once(ctx, "fanout", eventID, func(ctx context.Context, tx Tx) error {
 		in, err := tx.Intent(ctx, intentID)
 		if err != nil {
 			return err
@@ -286,5 +286,8 @@ func (f *Fanout) Handle(ctx context.Context, eventID, intentID string) error {
 		f.mu.Unlock()
 		return f.Back.Notify(ctx, in.ID, chosen)
 	})
+	if err == nil && !ran {
+		f.Market.fact(ctx, "inbox.duplicate") // a redelivery absorbed by the inbox
+	}
 	return err
 }
