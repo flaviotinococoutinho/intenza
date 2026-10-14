@@ -102,6 +102,7 @@ concepts:
     mediates: [buyer, seller]
     founded_by: proposal-chosen
     definition: Contrato que nasce da seleção, com os compromissos mútuos de pagar e de entregar conforme os termos congelados.
+    realized_by: [internal/domain/agreement.Agreement]
 
   - id: terms-snapshot
     label: Termos congelados
@@ -109,6 +110,7 @@ concepts:
     grounded_in: [ietf-rfc-8785]
     part_of: agreement
     definition: Cópia canônica da intenção, da proposta e do schema no instante do acordo. O hash dela é a prova.
+    realized_by: [internal/domain/agreement.Terms]
 
   - id: escrow
     label: Escrow
@@ -122,24 +124,28 @@ concepts:
     category: event
     participants: [buyer, seller, arbiter]
     definition: Processo de conferência de campos probatórios entre o que o termo diz e o que chegou.
+    realized_by: [internal/domain/agreement.Dispute]
 
   - id: field-claim
     label: Reclamação de campo
     category: information
     part_of: dispute
     definition: Alegação sobre um atributo probatório, esperado contra observado, com evidência anexada.
+    realized_by: [internal/domain/agreement.ClaimedField]
 
   # --- reputação ------------------------------------------------------------
   - id: rating
     label: Avaliação
     category: social-object
     definition: Juízo de uma parte sobre a outra depois da transação, revelado às cegas.
+    realized_by: [internal/domain/reputation.Rating]
 
   - id: reputation
     label: Reputação
     category: quality
     inheres_in: party
     definition: Estimativa a posteriori da confiabilidade de uma parte num papel. Carrega a própria incerteza num intervalo de credibilidade.
+    realized_by: [internal/domain/reputation.Score]
 
   # --- tipos de valor -------------------------------------------------------
   - id: money
@@ -325,48 +331,70 @@ concepts:
     category: phase
     phase_of: agreement
     definition: Escrow aberto, esperando o comprador pagar.
+    realized_by: [internal/domain/agreement.StatusAwaitingFunding]
 
   - id: agreement-funded
     label: Pago
     category: phase
     phase_of: agreement
     definition: Valor custodiado pelo agente, vendedor liberado para enviar.
+    realized_by: [internal/domain/agreement.StatusFunded]
 
   - id: agreement-shipped
     label: Enviado
     category: phase
     phase_of: agreement
     definition: Vendedor informou o envio.
+    realized_by: [internal/domain/agreement.StatusShipped]
 
   - id: agreement-delivered
     label: Entregue
     category: phase
     phase_of: agreement
     definition: Item chegou, janela de inspeção correndo.
+    realized_by: [internal/domain/agreement.StatusDelivered]
 
   - id: agreement-disputed
     label: Em disputa
     category: phase
     phase_of: agreement
     definition: Comprador reclamou de campos probatórios dentro da inspeção.
+    realized_by: [internal/domain/agreement.StatusDisputed]
+
+  - id: agreement-releasing
+    label: Liberando
+    category: phase
+    phase_of: agreement
+    definition: Liberação pedida ao agente de custódia, esperando a confirmação dele.
+    realized_by: [internal/domain/agreement.StatusReleasing]
+
+  - id: agreement-refunding
+    label: Estornando
+    category: phase
+    phase_of: agreement
+    definition: Estorno pedido ao agente de custódia, esperando a confirmação dele.
+    realized_by: [internal/domain/agreement.StatusRefunding]
 
   - id: agreement-released
     label: Liberado
     category: phase
     phase_of: agreement
     definition: Terminal. Valor liberado ao vendedor.
+    realized_by: [internal/domain/agreement.StatusReleased]
 
   - id: agreement-refunded
     label: Estornado
     category: phase
     phase_of: agreement
     definition: Terminal. Valor devolvido ao comprador.
+    realized_by: [internal/domain/agreement.StatusRefunded]
 
   - id: agreement-cancelled
     label: Cancelado
     category: phase
     phase_of: agreement
     definition: Terminal. Pagamento não chegou no prazo.
+    realized_by: [internal/domain/agreement.StatusCancelled]
 
   # --- eventos --------------------------------------------------------------
   - id: intent-published
@@ -419,6 +447,7 @@ concepts:
     participants: [buyer, seller]
     creates: [agreement]
     definition: Os termos são congelados e o acordo nasce.
+    realized_by: [internal/domain/agreement.EvFormed]
 
   - id: escrow-opened
     label: Escrow aberto
@@ -432,42 +461,49 @@ concepts:
     category: event
     participants: [escrow-agent, buyer]
     definition: O pagamento caiu na custódia.
+    realized_by: [internal/domain/agreement.EvFunded]
 
   - id: item-shipped
     label: Item enviado
     category: event
     participants: [seller, item]
     definition: O vendedor despacha o item.
+    realized_by: [internal/domain/agreement.EvShipped]
 
   - id: item-delivered
     label: Item entregue
     category: event
     participants: [buyer, item]
     definition: O item chega ao comprador e a inspeção começa.
+    realized_by: [internal/domain/agreement.EvDelivered]
 
   - id: delivery-accepted
     label: Entrega aceita
     category: event
     participants: [buyer]
     definition: O comprador aceita, ou a inspeção vence sem reclamação.
+    realized_by: [internal/domain/agreement.EvReleaseRequested]
 
   - id: escrow-released
     label: Valor liberado
     category: event
     participants: [escrow-agent, seller]
     definition: O agente libera o valor ao vendedor.
+    realized_by: [internal/domain/agreement.EvReleased]
 
   - id: escrow-refunded
     label: Valor estornado
     category: event
     participants: [escrow-agent, buyer]
     definition: O agente devolve o valor ao comprador.
+    realized_by: [internal/domain/agreement.EvRefunded]
 
   - id: dispute-resolved
     label: Disputa resolvida
     category: event
     participants: [arbiter]
     definition: A conferência de campos decide entre liberar e estornar.
+    realized_by: [internal/domain/agreement.EvDisputeResolved]
 
   - id: rating-submitted
     label: Avaliação enviada
@@ -475,12 +511,14 @@ concepts:
     participants: [party]
     creates: [rating]
     definition: Uma parte avalia a outra, ainda selada.
+    realized_by: [internal/domain/reputation.EvRatingSubmitted]
 
   - id: ratings-revealed
     label: Avaliações reveladas
     category: event
     participants: [buyer, seller]
     definition: As duas avaliações aparecem juntas, ou o prazo vence.
+    realized_by: [internal/domain/reputation.EvRatingsRevealed]
 
   - id: selection-timed-out
     label: Intenção expirada

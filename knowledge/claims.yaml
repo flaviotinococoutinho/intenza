@@ -55,12 +55,13 @@ claims:
 
   - id: phases-match-state-machines
     statement: As fases declaradas na ontologia são exatamente os estados alcançáveis das máquinas de estado, e as fases terminais não têm saída.
-    about: [intent, proposal]
+    about: [intent, proposal, agreement]
     kind: integrity
     basis: proof-exhaustive
     evidence:
       - test: internal/domain/intent.TestMachineMatchesTheOntologyPhases
       - test: internal/domain/proposal.TestMachineMatchesTheOntologyPhases
+      - test: internal/domain/agreement.TestSettlementOutcomesAreExclusive
 
   # --- seleção e acordo -----------------------------------------------------
   - id: selection-deterministic-explainable
@@ -83,7 +84,10 @@ claims:
     statement: Os termos do acordo são congelados em JSON canônico e o SHA-256 vai junto. Qualquer alteração muda o hash.
     about: [terms-snapshot, agreement]
     kind: integrity
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - symbol: internal/domain/agreement.Agreement.VerifyTerms
+      - test: internal/domain/agreement.TestTermsHashDetectsTampering
 
   - id: dispute-is-field-conference
     statement: Disputa é conferência de campos. Cada reclamação compara esperado contra observado de um atributo probatório do schema congelado.
@@ -92,6 +96,7 @@ claims:
     basis: example-tested
     evidence:
       - test: internal/domain/schema.TestConferenceOnlyAboutEvidentiaryTerms
+      - test: internal/domain/agreement.TestDisputeNeedsADiscrepancyOnAFixedField
 
   - id: generated-items-satisfy-own-predicates
     statement: Em qualquer folha do catálogo, um item sorteado válido passa no parser, satisfaz as restrições derivadas dele e não diverge de si na conferência.
@@ -125,13 +130,17 @@ claims:
     statement: Liberado, estornado e cancelado são terminais e exclusivos. Um acordo nunca libera e estorna.
     about: [agreement, escrow]
     kind: safety
-    basis: conjecture
+    basis: proof-exhaustive
+    evidence:
+      - test: internal/domain/agreement.TestSettlementOutcomesAreExclusive
 
   - id: webhook-handling-idempotent
     statement: Webhook duplicado ou fora de ordem não muda o resultado. A máquina de estados recusa transição inválida e o evento é deduplicado.
     about: [escrow, agreement]
     kind: safety
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/domain/agreement.TestSettledIsIdempotentAndOrderAware
 
   - id: reconciliation-converges
     statement: Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos.
@@ -346,16 +355,33 @@ claims:
     statement: Com poucas avaliações, a reputação encolhe para a média da plataforma. Um 5 isolado não supera um histórico longo de 4,8.
     about: [reputation]
     kind: economic
-    basis: conjecture
+    basis: property-tested
+    evidence:
+      - test: internal/domain/reputation.TestShrinkageAgainstLuckyNewcomers
+      - test: internal/domain/reputation.TestIntervalShrinksWithEvidence
+
+  - id: credible-intervals-from-beta-inversion
+    statement: O intervalo de credibilidade de 95% vem da inversa da beta incompleta regularizada e bate com as formas fechadas conhecidas.
+    about: [reputation]
+    kind: integrity
+    basis: example-tested
+    evidence:
+      - test: internal/domain/reputation.TestQuantilesAgainstClosedForms
+      - test: internal/domain/reputation.TestSamplingMatchesThePosteriorMean
 
   - id: exploration-exposes-new-sellers
     statement: Na notificação de intenções, amostragem de Thompson dá exposição mínima a vendedores sem histórico.
     about: [seller, reputation]
     kind: economic
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/domain/reputation.TestThompsonSamplingExposesNewcomers
+    notes: Monte Carlo com semente fixa prova o mecanismo, não o efeito no mercado. O risco segue exposto até haver medição com carga.
 
   - id: ratings-double-blind
     statement: As avaliações só aparecem quando as duas partes avaliaram ou o prazo venceu.
     about: [rating]
     kind: economic
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/domain/reputation.TestDoubleBlindReveal
