@@ -244,7 +244,7 @@ risks:
     severity: 3
     likelihood: 2
     signals: ['intenza_consumer_events_total{result="dead-lettered"}']
-    mitigated_by: [poison-message-isolated]
+    mitigated_by: [dead-letter-after-bounded-retries, poison-message-isolated]
     experiments: [poison-message]
 
   - id: cache-stampede

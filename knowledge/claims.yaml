@@ -353,6 +353,17 @@ claims:
     basis: conjecture
     falsifiable_by: [poison-message]
 
+  - id: dead-letter-after-bounded-retries
+    statement: O consumidor tenta cada registro até 3 vezes (o venenoso, uma só) e então o estaciona na DLQ com a origem, liberando o offset. Desligar no meio ou a DLQ fora do ar nunca pulam o registro.
+    about: [event-record]
+    kind: liveness
+    basis: example-tested
+    evidence:
+      - test: internal/adapter/kafka.TestTransientFailureRetriesThenParksInTheDLQ
+      - test: internal/adapter/kafka.TestPoisonSkipsTheRetries
+      - test: internal/adapter/kafka.TestShutdownNeverParks
+      - test: internal/adapter/kafka.TestDLQOutageStopsInsteadOfSkipping
+
   # --- Redis, carga e cache -------------------------------------------------
   - id: intent-creation-idempotent
     statement: Repetir a criação de intenção com a mesma Idempotency-Key devolve a mesma intenção, com ou sem Redis.

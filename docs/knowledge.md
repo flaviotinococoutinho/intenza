@@ -13,12 +13,12 @@ A priori vale para toda entrada no escopo (conhecimento determinístico). A post
 | por construção | a priori | 7 | 5 |
 | prova exaustiva | a priori | 6 | 4 |
 | teste de propriedade | a priori | 5 | 5 |
-| teste de exemplo | a priori | 4 | 21 |
+| teste de exemplo | a priori | 4 | 22 |
 | medido | a posteriori | 3 | 0 |
 | testemunho | testemunhal | 2 | 3 |
 | conjectura | sem justificativa | 1 | 8 |
 
-Dívida epistêmica: **8 de 46** alegações ainda são conjecturas.
+Dívida epistêmica: **8 de 47** alegações ainda são conjecturas.
 
 ## Riscos
 
@@ -55,7 +55,7 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | **retaliation**<br>Avaliação retaliatória | 9 | Uma parte vê a avaliação da outra antes de avaliar. → Nota baixa provoca nota baixa de volta. → Reputação vira negociação e perde sinal. | determinística | mitigado | ratings-double-blind |  |
 | **clock-skew**<br>Relógio de um nó fora do lugar | 8 | NTP falha ou VM pausa e o relógio local adianta ou atrasa. → Decisões de prazo tomadas com o relógio local discordam entre nós. → Proposta aceita depois do prazo ou envelope aberto antes da hora. | determinística | mitigado | reveal-gated-by-persisted-close, effective-status-is-time-function | clock-skew-reveal |
 | **database-outage**<br>Banco indisponível | 8 | Primário pausa, cai ou troca. → Chamadas ficam esperando conexão e acumulam. → A API pendura em vez de falhar rápido. | estocástica | exposto | mongo-outage-fails-fast | mongo-pause |
-| **poison-message**<br>Evento malformado trava o consumidor | 6 | Versão de esquema inesperada ou dado corrompido. → O consumidor falha sempre no mesmo offset. → A partição para e o atraso cresce sem limite. | híbrida | exposto | poison-message-isolated | poison-message |
+| **poison-message**<br>Evento malformado trava o consumidor | 6 | Versão de esquema inesperada ou dado corrompido. → O consumidor falha sempre no mesmo offset. → A partição para e o atraso cresce sem limite. | híbrida | exposto | dead-letter-after-bounded-retries, poison-message-isolated | poison-message |
 | **cache-stampede**<br>Estouro de recomputação no cache | 6 | Muitas chaves expiram juntas sob carga. → Todas as réplicas recomputam a mesma coisa ao mesmo tempo. → Pico de carga no banco e latência em degrau. | estocástica | exposto | cache-early-refresh |  |
 | **biased-ranking**<br>Ordenação arbitrária ou manipulável | 6 | Critério opaco ou dependente da ordem de chegada. → Duas consultas iguais devolvem ordens diferentes. → Comprador desconfia e vendedor otimiza o horário em vez da oferta. | determinística | mitigado | selection-deterministic-explainable |  |
 | **funds-custody**<br>Dinheiro transitando por conta própria | 5 | Atalho de produto para simplificar repasse ou estorno. → A plataforma passa a custodiar recursos de terceiros. → Exposição regulatória e risco de crédito sobre o valor dos clientes. | determinística | mitigado | platform-never-holds-funds, payment-institution-regulated |  |
@@ -82,6 +82,7 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | **brcode-composes-norms** | O BR Code compõe MCC, moeda 986, país BR e o CRC EMV, e o exemplo do manual do BCB reencoda byte a byte. | integrity | teste de exemplo | teste `standards/emvco/mpm.TestParseSplitAndSeal`<br>teste `standards/bcb/brcode.TestManualExample` |
 | **consumers-effectively-once** | Cada consumidor aplica um evento no máximo uma vez, com inbox único por consumidor e evento na mesma transação do efeito. | integrity | teste de exemplo | símbolo `internal/adapter/mongo.Store.Once`<br>teste `internal/integration.TestRelayAtLeastOnceAndInboxEffectivelyOnce` |
 | **credible-intervals-from-beta-inversion** | O intervalo de credibilidade de 95% vem da inversa da beta incompleta regularizada e bate com as formas fechadas conhecidas. | integrity | teste de exemplo | teste `internal/domain/reputation.TestQuantilesAgainstClosedForms`<br>teste `internal/domain/reputation.TestSamplingMatchesThePosteriorMean` |
+| **dead-letter-after-bounded-retries** | O consumidor tenta cada registro até 3 vezes (o venenoso, uma só) e então o estaciona na DLQ com a origem, liberando o offset. Desligar no meio ou a DLQ fora do ar nunca pulam o registro. | liveness | teste de exemplo | teste `internal/adapter/kafka.TestTransientFailureRetriesThenParksInTheDLQ`<br>teste `internal/adapter/kafka.TestPoisonSkipsTheRetries`<br>teste `internal/adapter/kafka.TestShutdownNeverParks`<br>teste `internal/adapter/kafka.TestDLQOutageStopsInsteadOfSkipping` |
 | **dispute-is-field-conference** | Disputa é conferência de campos. Cada reclamação compara esperado contra observado de um atributo probatório do schema congelado. | integrity | teste de exemplo | teste `internal/domain/schema.TestConferenceOnlyAboutEvidentiaryTerms`<br>teste `internal/domain/agreement.TestDisputeNeedsADiscrepancyOnAFixedField` |
 | **durations-keep-nominal-apart** | Durações separam o nominal do exato. P1D atravessa o horário de verão mantendo o relógio de parede, PT24H não, e P1M nunca vira nanossegundos. | integrity | teste de exemplo | teste `standards/iso/iso8601.TestNominalVersusExact` |
 | **effective-status-is-time-function** | O estado efetivo de uma intenção é função pura do relógio recebido. Timer atrasado não muda o que se lê. | safety | teste de exemplo | teste `internal/domain/intent.TestEffectiveStatusIsAFunctionOfTime` |
