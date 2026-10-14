@@ -90,6 +90,7 @@ services:
     environment:
       <<: *env
       INTENZA_HTTP_ADDR: :8090
+      INTENZA_PSP_AUTO_PAY_AFTER: 2s # the simulated buyer pays; experiments break the agent, not the buyer
     ports: ["8090:8090", "9094:9090"]
 
   api:

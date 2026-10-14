@@ -32,6 +32,9 @@ func main() {
 	defer stop()
 	defer func() { _ = tel.Shutdown(context.WithoutCancel(ctx)) }()
 	sim := psp.New(cfg.WebhookURL, []byte(cfg.WebhookSecret), cfg.PSPSeed, log)
+	world := sim.GetFaults()
+	world.AutoPayAfter = cfg.PSPAutoPay
+	sim.SetFaults(world)
 	adm := admin.New()
 	adm.Mux.Handle("GET /metrics", tel.MetricsHandler())
 	adm.EnableFaults() // the simulator exists to be broken

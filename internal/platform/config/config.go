@@ -48,7 +48,10 @@ type Config struct {
 	FanoutSeed    uint64        `env:"INTENZA_FANOUT_SEED" envDefault:"1"`
 	EscrowTimeout time.Duration `env:"INTENZA_ESCROW_TIMEOUT" envDefault:"1500ms"`
 	PSPSeed       uint64        `env:"INTENZA_PSP_SEED" envDefault:"7"`
-	WebhookURL    string        `env:"INTENZA_WEBHOOK_URL" envDefault:"http://localhost:8080/v1/webhooks/escrow"`
+	// PSPAutoPay is the simulated buyer: pending escrows are paid after this
+	// long (0 = nobody pays). A trait of the simulated world, not a fault.
+	PSPAutoPay time.Duration `env:"INTENZA_PSP_AUTO_PAY_AFTER" envDefault:"0s"`
+	WebhookURL string        `env:"INTENZA_WEBHOOK_URL" envDefault:"http://localhost:8080/v1/webhooks/escrow"`
 
 	OTLPEndpoint string `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 }
