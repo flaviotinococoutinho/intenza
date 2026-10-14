@@ -88,11 +88,13 @@ concepts:
     label: Intenção de compra
     category: social-object
     definition: Pedido público de propostas criado pelo comprador, com categoria, restrições sobre atributos e janela de propostas. Não obriga a comprar.
+    realized_by: [internal/domain/intent.Intent]
 
   - id: proposal
     label: Proposta selada
     category: commitment
     definition: Compromisso condicional do vendedor com item de atributos declarados, preço total selado e validade explícita.
+    realized_by: [internal/domain/proposal.Proposal]
 
   - id: agreement
     label: Acordo
@@ -145,6 +147,7 @@ concepts:
     category: datatype
     grounded_in: [iso-4217]
     definition: Quantia em unidades menores de uma moeda.
+    realized_by: [internal/domain/money.Money]
 
   - id: duration
     label: Duração
@@ -242,6 +245,7 @@ concepts:
     category: information
     grounded_in: [ietf-rfc-9562]
     definition: Envelope imutável de um evento de domínio publicado pelo outbox.
+    realized_by: [internal/domain/event.Event]
 
   # --- fases da intenção ----------------------------------------------------
   - id: intent-open
@@ -249,30 +253,35 @@ concepts:
     category: phase
     phase_of: intent
     definition: Recebendo propostas até o fechamento.
+    realized_by: [internal/domain/intent.StatusOpen]
 
   - id: intent-closed
     label: Fechada
     category: phase
     phase_of: intent
     definition: Janela encerrada, propostas reveladas ao comprador e seleção pendente.
+    realized_by: [internal/domain/intent.StatusClosed]
 
   - id: intent-awarded
     label: Adjudicada
     category: phase
     phase_of: intent
     definition: Uma proposta escolhida, virou acordo.
+    realized_by: [internal/domain/intent.StatusAwarded]
 
   - id: intent-expired
     label: Expirada
     category: phase
     phase_of: intent
     definition: Fechou sem seleção dentro do prazo.
+    realized_by: [internal/domain/intent.StatusExpired]
 
   - id: intent-cancelled
     label: Cancelada
     category: phase
     phase_of: intent
     definition: Retirada pelo comprador antes da seleção.
+    realized_by: [internal/domain/intent.StatusCancelled]
 
   # --- fases da proposta ----------------------------------------------------
   - id: proposal-active
@@ -280,30 +289,35 @@ concepts:
     category: phase
     phase_of: proposal
     definition: Válida e concorrendo.
+    realized_by: [internal/domain/proposal.StatusActive]
 
   - id: proposal-withdrawn
     label: Retirada
     category: phase
     phase_of: proposal
     definition: Retirada pelo vendedor antes do fechamento.
+    realized_by: [internal/domain/proposal.StatusWithdrawn]
 
   - id: proposal-selected
     label: Selecionada
     category: phase
     phase_of: proposal
     definition: Escolhida pelo comprador.
+    realized_by: [internal/domain/proposal.StatusSelected]
 
   - id: proposal-rejected
     label: Preterida
     category: phase
     phase_of: proposal
     definition: Outra proposta foi escolhida ou a intenção terminou sem ela.
+    realized_by: [internal/domain/proposal.StatusRejected]
 
   - id: proposal-lapsed
     label: Caducada
     category: phase
     phase_of: proposal
     definition: A validade venceu antes da seleção.
+    realized_by: [internal/domain/proposal.StatusLapsed]
 
   # --- fases do acordo ------------------------------------------------------
   - id: agreement-awaiting-funding
@@ -361,6 +375,7 @@ concepts:
     participants: [buyer]
     creates: [intent]
     definition: O comprador publica a intenção e abre a janela de propostas.
+    realized_by: [internal/domain/intent.EvPublished]
 
   - id: proposal-submitted
     label: Proposta enviada
@@ -368,30 +383,35 @@ concepts:
     participants: [seller]
     creates: [proposal]
     definition: O vendedor sela e envia uma proposta.
+    realized_by: [internal/domain/proposal.EvSubmitted]
 
   - id: proposal-revised
     label: Proposta revisada
     category: event
     participants: [seller]
     definition: O vendedor troca a proposta ativa antes do fechamento.
+    realized_by: [internal/domain/proposal.EvRevised]
 
   - id: proposal-retracted
     label: Proposta retirada
     category: event
     participants: [seller]
     definition: O vendedor retira a proposta antes do fechamento.
+    realized_by: [internal/domain/proposal.EvWithdrawn]
 
   - id: bidding-closed
     label: Janela fechada
     category: event
     participants: [intent]
     definition: O prazo vence sob o relógio do banco e os envelopes podem ser abertos.
+    realized_by: [internal/domain/intent.EvClosed]
 
   - id: proposal-chosen
     label: Proposta escolhida
     category: event
     participants: [buyer, proposal]
     definition: O comprador escolhe uma proposta entre as reveladas.
+    realized_by: [internal/domain/intent.EvAwarded]
 
   - id: agreement-formed
     label: Acordo formado
@@ -467,9 +487,11 @@ concepts:
     category: event
     participants: [intent]
     definition: O prazo de seleção vence sem escolha.
+    realized_by: [internal/domain/intent.EvExpired]
 
   - id: intent-withdrawn
     label: Intenção cancelada
     category: event
     participants: [buyer]
     definition: O comprador retira a intenção.
+    realized_by: [internal/domain/intent.EvCancelled]
