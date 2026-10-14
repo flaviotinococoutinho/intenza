@@ -160,36 +160,43 @@ concepts:
   - id: cpf
     label: CPF
     category: datatype
+    grounded_in: [rfb-cpf]
     definition: Identificador fiscal de pessoa física com dois dígitos verificadores.
 
   - id: cnpj
     label: CNPJ
     category: datatype
+    grounded_in: [rfb-cnpj]
     definition: Identificador fiscal de pessoa jurídica, com base alfanumérica e dígitos verificadores numéricos.
 
   - id: gtin
     label: GTIN
     category: datatype
+    grounded_in: [gs1-gtin]
     definition: Identificador de produto com dígito verificador.
 
   - id: isbn
     label: ISBN
     category: datatype
+    grounded_in: [iso-2108]
     definition: Identificador de livro, nas formas de 10 e 13 dígitos.
 
   - id: vin
     label: VIN (chassi)
     category: datatype
+    grounded_in: [iso-3779]
     definition: Identificador do veículo, usado para conferir compatibilidade e origem da peça.
 
   - id: renavam
     label: RENAVAM
     category: datatype
+    grounded_in: [senatran-renavam]
     definition: Registro do veículo de origem de uma peça de desmonte.
 
   - id: postal-code
     label: CEP
     category: datatype
+    grounded_in: [correios-cep]
     definition: Código postal que resolve a UF de origem e de destino para estimar prazo.
 
   - id: state
