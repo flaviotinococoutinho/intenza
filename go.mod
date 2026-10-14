@@ -1,6 +1,6 @@
 module github.com/flaviotinococoutinho/intenza
 
-go 1.26.4
+go 1.27.2
 
 require (
 	github.com/flaviotinococoutinho/intenza/standards v0.0.0
