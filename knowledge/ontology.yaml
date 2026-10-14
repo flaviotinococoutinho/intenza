@@ -100,6 +100,7 @@ concepts:
   - id: terms-snapshot
     label: Termos congelados
     category: information
+    grounded_in: [ietf-rfc-8785]
     part_of: agreement
     definition: Cópia canônica da intenção, da proposta e do schema no instante do acordo. O hash dela é a prova.
 
@@ -144,11 +145,13 @@ concepts:
   - id: duration
     label: Duração
     category: datatype
+    grounded_in: [iso-8601-duration]
     definition: Período nominal ou exato para janelas e validades.
 
   - id: entity-id
     label: Identificador de entidade
     category: datatype
+    grounded_in: [ietf-rfc-9562]
     definition: Identificador ordenado no tempo, amigo de índice B-tree.
 
   - id: mcc
@@ -226,11 +229,13 @@ concepts:
   - id: payment-code
     label: Código de pagamento
     category: datatype
+    grounded_in: [bcb-brcode, emvco-qrcps-mpm]
     definition: Payload copia e cola com as instruções de pagamento do escrow.
 
   - id: event-record
     label: Registro de evento
     category: information
+    grounded_in: [ietf-rfc-9562]
     definition: Envelope imutável de um evento de domínio publicado pelo outbox.
 
   # --- fases da intenção ----------------------------------------------------
