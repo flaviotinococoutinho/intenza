@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -41,12 +42,31 @@ type Env struct {
 
 // Record is one line of the journal.
 type Record struct {
-	At     time.Time `json:"at"`
-	Phase  string    `json:"phase"` // steady | method | rollback | verify
-	What   string    `json:"what"`
-	OK     bool      `json:"ok"`
-	Value  *float64  `json:"value,omitempty"`
-	Detail string    `json:"detail,omitempty"`
+	At    time.Time `json:"at"`
+	Phase string    `json:"phase"` // steady | method | rollback | verify
+	What  string    `json:"what"`
+	OK    bool      `json:"ok"`
+	// Inconclusive marks a probe that measured nothing (failed query, missing
+	// series, broken precondition): it can abort a run, never refute it.
+	Inconclusive bool     `json:"inconclusive,omitempty"`
+	Value        *float64 `json:"value,omitempty"`
+	Detail       string   `json:"detail,omitempty"`
+}
+
+// outcome of one probe.
+type outcome int
+
+const (
+	passed     outcome = iota
+	violated           // a measured counterexample
+	unmeasured         // nothing was measured: no conclusion either way
+)
+
+// errInconclusive marks a probe that could not measure.
+var errInconclusive = errors.New("sem medição")
+
+func inconclusive(format string, args ...any) error {
+	return fmt.Errorf("%w: %s", errInconclusive, fmt.Sprintf(format, args...))
 }
 
 // Journal is the full account of a run, the evidence a "measured" claim points to.
@@ -88,31 +108,68 @@ func (r *Runner) Close(ctx context.Context) {
 }
 
 // Run executes one experiment and returns its journal.
+//
+// The verdict follows what was observed: aborted when the experiment itself
+// broke (no steady state, an action or the load failed), falsified when a
+// probe measured a counterexample, aborted again when some probe measured
+// nothing and none refuted, held otherwise.
 func (r *Runner) Run(ctx context.Context, e Experiment) Journal {
 	j := Journal{Experiment: e, StartedAt: time.Now().UTC(), Verdict: "held", Environment: map[string]string{
 		"go": runtime.Version(), "os": runtime.GOOS + "/" + runtime.GOARCH, "commit": buildinfo.Read().Commit,
 		"ci": os.Getenv("CI"), "runner": os.Getenv("RUNNER_NAME"),
 	}}
 	log := r.Env.Log.With("experiment", e.ID)
-	note := func(phase, what string, ok bool, v *float64, detail string) {
-		j.Records = append(j.Records, Record{At: time.Now().UTC(), Phase: phase, What: what, OK: ok, Value: v, Detail: detail})
-		log.Info(phase, "what", what, "ok", ok, "detail", detail)
+	var broken, refuted, blind bool
+	note := func(phase, what string, o outcome, v *float64, detail string) {
+		j.Records = append(j.Records, Record{
+			At: time.Now().UTC(), Phase: phase, What: what, OK: o == passed, Inconclusive: o == unmeasured, Value: v, Detail: detail,
+		})
+		log.Info(phase, "what", what, "ok", o == passed, "detail", detail)
 	}
-
-	// 1. steady state before the fault: otherwise no conclusion can be drawn
-	for _, p := range e.Steady {
-		v, ok, detail := r.probe(ctx, p, nil)
-		note("steady", p.Name, ok, v, detail)
-		if !ok {
+	judge := func(phase, what string, o outcome, v *float64, detail string) {
+		note(phase, what, o, v, detail)
+		refuted = refuted || o == violated
+		blind = blind || o == unmeasured
+	}
+	finish := func() Journal {
+		switch {
+		case broken:
 			j.Verdict = "aborted"
+		case refuted:
+			j.Verdict = "falsified"
+		case blind:
+			j.Verdict = "aborted"
+		default:
+			j.Verdict = "held"
 		}
-	}
-	if j.Verdict == "aborted" {
 		j.FinishedAt = time.Now().UTC()
 		return j
 	}
 
-	// 2. background load
+	// 1. steady state before the fault: otherwise no conclusion can be drawn
+	for _, p := range e.Steady {
+		v, o, detail := r.probe(ctx, p, nil, nil)
+		note("steady", p.Name, o, v, detail)
+		broken = broken || o != passed
+	}
+	if broken {
+		return finish()
+	}
+
+	// 2. baselines: counters are read as growth during this run, so a series
+	// born with its first event, or left over by an earlier run, reads right
+	base := map[string]float64{}
+	for _, p := range e.deltaProbes() {
+		v, _, err := r.promql(ctx, p.PromQL.Query)
+		if err != nil {
+			note("baseline", p.Name, unmeasured, nil, err.Error())
+			continue
+		}
+		base[p.Name] = v
+		note("baseline", p.Name, passed, &v, "linha de base")
+	}
+
+	// 3. background load
 	var (
 		stats   *load.Stats
 		loadErr error
@@ -130,37 +187,34 @@ func (r *Runner) Run(ctx context.Context, e Experiment) Journal {
 		}()
 	}
 
-	// 3. method, then 4. rollbacks that always run
+	// 4. method, then 5. rollbacks that always run
 	func() {
 		defer func() {
 			for _, s := range e.Rollback {
 				err := r.act(context.WithoutCancel(ctx), s)
-				note("rollback", describe(s), err == nil, nil, errText(err))
+				note("rollback", describe(s), outcomeOf(err == nil), nil, errText(err))
 			}
 		}()
 		for _, s := range e.Method {
 			if s.Probe != nil {
-				v, ok, detail := r.probe(ctx, *s.Probe, nil)
-				note("method", "probe "+s.Probe.Name, ok, v, detail)
-				if !ok {
-					j.Verdict = "falsified"
-				}
+				v, o, detail := r.probe(ctx, *s.Probe, nil, base)
+				judge("method", "probe "+s.Probe.Name, o, v, detail)
 				continue
 			}
 			err := r.act(ctx, s)
-			note("method", describe(s), err == nil, nil, errText(err))
+			note("method", describe(s), outcomeOf(err == nil), nil, errText(err))
 			if err != nil {
-				j.Verdict = "aborted"
+				broken = true
 				return
 			}
 		}
 	}()
 
-	// 5. let the system settle, wait for the load, verify
+	// 6. let the system settle, wait for the load, verify
 	wg.Wait()
 	if loadErr != nil {
-		note("verify", "carga", false, nil, loadErr.Error())
-		j.Verdict = "aborted"
+		note("verify", "carga", violated, nil, loadErr.Error())
+		broken = true
 	}
 	if stats != nil {
 		j.Load = stats.Summaries()
@@ -169,14 +223,17 @@ func (r *Runner) Run(ctx context.Context, e Experiment) Journal {
 		time.Sleep(time.Duration(e.Settle))
 	}
 	for _, p := range e.Verify {
-		v, ok, detail := r.probe(ctx, p, j.Load)
-		note("verify", p.Name, ok, v, detail)
-		if !ok && j.Verdict == "held" {
-			j.Verdict = "falsified"
-		}
+		v, o, detail := r.probe(ctx, p, j.Load, base)
+		judge("verify", p.Name, o, v, detail)
 	}
-	j.FinishedAt = time.Now().UTC()
-	return j
+	return finish()
+}
+
+func outcomeOf(ok bool) outcome {
+	if ok {
+		return passed
+	}
+	return violated
 }
 
 func errText(err error) string {
@@ -301,54 +358,91 @@ func (r *Runner) docker(ctx context.Context, d DockerAction) error {
 	defer res.Body.Close()
 	if res.StatusCode >= 300 && res.StatusCode != http.StatusNotModified {
 		msg, _ := io.ReadAll(res.Body)
+		// already in the asked state: a rollback after the method undid the
+		// fault itself is not a failure (start/stop answer 304 for the same)
+		if (d.Action == "unpause" && bytes.Contains(msg, []byte("is not paused"))) ||
+			(d.Action == "pause" && bytes.Contains(msg, []byte("is already paused"))) {
+			return nil
+		}
 		return fmt.Errorf("docker %s %s: %d %s", d.Action, name, res.StatusCode, msg)
 	}
 	return nil
 }
 
-// probe evaluates a probe; loadStats is only available after the load.
-func (r *Runner) probe(ctx context.Context, p Probe, loadStats map[string]load.Summary) (*float64, bool, string) {
-	var (
-		v   float64
-		err error
-	)
-	switch {
-	case p.HTTP != nil:
+// probe evaluates a probe; loadStats is only available after the load and
+// base holds the baselines of the delta probes.
+func (r *Runner) probe(ctx context.Context, p Probe, loadStats map[string]load.Summary, base map[string]float64) (*float64, outcome, string) {
+	if p.HTTP != nil {
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, p.HTTP.URL, nil)
-		res, herr := r.http.Do(req)
-		if herr != nil {
-			return nil, false, herr.Error()
+		res, err := r.http.Do(req)
+		if err != nil {
+			return nil, violated, err.Error() // no answer is the observation
 		}
 		_ = res.Body.Close()
 		want := p.HTTP.Status
 		if want == 0 {
 			want = http.StatusOK
 		}
-		v = float64(res.StatusCode)
-		return &v, res.StatusCode == want, "status " + strconv.Itoa(res.StatusCode)
+		v := float64(res.StatusCode)
+		return &v, outcomeOf(res.StatusCode == want), "status " + strconv.Itoa(res.StatusCode)
+	}
+	v, err := r.measure(ctx, p, loadStats, base)
+	switch {
+	case errors.Is(err, errInconclusive):
+		return nil, unmeasured, err.Error()
+	case err != nil:
+		return nil, violated, err.Error()
+	}
+	return &v, outcomeOf((p.Min == nil || v >= *p.Min) && (p.Max == nil || v <= *p.Max)), bounds(p)
+}
+
+func (r *Runner) measure(ctx context.Context, p Probe, loadStats map[string]load.Summary, base map[string]float64) (float64, error) {
+	switch {
 	case p.PromQL != nil:
-		v, err = r.promql(ctx, p.PromQL.Query)
+		v, present, err := r.promql(ctx, p.PromQL.Query)
+		if err != nil {
+			return 0, inconclusive("prometheus: %v", err)
+		}
+		if p.PromQL.Delta {
+			b, ok := base[p.Name]
+			switch {
+			case !ok:
+				return 0, inconclusive("sem linha de base")
+			case v < b: // the process restarted and its counter with it
+				return v, nil
+			}
+			return v - b, nil
+		}
+		if !present {
+			return 0, inconclusive("série ausente: nada a comparar")
+		}
+		return v, nil
 	case p.Mongo != nil:
-		v, err = r.mongoCount(ctx, *p.Mongo)
+		v, err := r.mongoCount(ctx, *p.Mongo)
+		if err != nil {
+			return 0, inconclusive("mongo: %v", err)
+		}
+		return v, nil
 	case p.LoadStat != nil:
 		s, ok := loadStats[p.LoadStat.Op]
 		if !ok {
-			return nil, false, "sem medições para " + p.LoadStat.Op
+			if p.LoadStat.Stat == "count" {
+				return 0, nil // nothing of that kind happened: a real zero
+			}
+			return 0, inconclusive("sem medições para %s", p.LoadStat.Op)
 		}
-		v = map[string]float64{
+		v, ok := map[string]float64{
 			"p50": s.P50, "p95": s.P95, "p99": s.P99, "error_ratio": s.ErrorRatio,
 			"count": float64(s.Count), "server_errors": float64(s.ServerErrors),
 		}[p.LoadStat.Stat]
+		if !ok {
+			return 0, inconclusive("estatística desconhecida %q", p.LoadStat.Stat)
+		}
+		return v, nil
 	case p.Scenario != "":
-		v, err = r.scenario(ctx, p.Scenario)
-	default:
-		return nil, false, "sonda vazia"
+		return r.scenario(ctx, p.Scenario)
 	}
-	if err != nil {
-		return nil, false, err.Error()
-	}
-	ok := (p.Min == nil || v >= *p.Min) && (p.Max == nil || v <= *p.Max)
-	return &v, ok, bounds(p)
+	return 0, inconclusive("sonda vazia")
 }
 
 func bounds(p Probe) string {
@@ -362,28 +456,42 @@ func bounds(p Probe) string {
 	return strings.Join(parts, " e ")
 }
 
-func (r *Runner) promql(ctx context.Context, q string) (float64, error) {
+// promql runs an instant query. A missing series is not a zero: present
+// tells them apart (NaN, as histogram_quantile gives over no data, counts as
+// missing), and an error answer is an error, not an empty result.
+func (r *Runner) promql(ctx context.Context, q string) (v float64, present bool, err error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, r.Env.Prometheus+"/api/v1/query?query="+url.QueryEscape(q), nil)
 	res, err := r.http.Do(req)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	defer res.Body.Close()
 	var out struct {
-		Data struct {
+		Status string `json:"status"`
+		Error  string `json:"error"`
+		Data   struct {
 			Result []struct {
 				Value [2]any `json:"value"`
 			} `json:"result"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
-		return 0, err
+		return 0, false, err
+	}
+	if res.StatusCode != http.StatusOK || out.Status != "success" {
+		return 0, false, fmt.Errorf("%d %s", res.StatusCode, out.Error)
 	}
 	if len(out.Data.Result) == 0 {
-		return 0, nil // no series: treated as zero (no events of that kind)
+		return 0, false, nil
 	}
-	s, _ := out.Data.Result[0].Value[1].(string)
-	return strconv.ParseFloat(s, 64)
+	raw, _ := out.Data.Result[0].Value[1].(string)
+	if v, err = strconv.ParseFloat(raw, 64); err != nil {
+		return 0, false, err
+	}
+	if math.IsNaN(v) {
+		return 0, false, nil
+	}
+	return v, true, nil
 }
 
 func (r *Runner) mongoCount(ctx context.Context, p MongoProbe) (float64, error) {
@@ -444,7 +552,7 @@ func Write(dir string, j Journal) error {
 func Markdown(j Journal) string {
 	var b strings.Builder
 	e := j.Experiment
-	verdict := map[string]string{"held": "hipótese sustentada", "falsified": "hipótese refutada", "aborted": "abortado (sistema fora do estado estável ou ação falhou)"}[j.Verdict]
+	verdict := map[string]string{"held": "hipótese sustentada", "falsified": "hipótese refutada", "aborted": "abortado (sem estado estável, ação falhou ou sonda sem medição)"}[j.Verdict]
 	fmt.Fprintf(&b, "# %s\n\n**Veredito: %s** · risco `%s` · %s → %s\n\n", e.Title, verdict, e.Risk,
 		j.StartedAt.Format(time.RFC3339), j.FinishedAt.Format(time.RFC3339))
 	fmt.Fprintf(&b, "> %s\n\n", e.Hypothesis)
@@ -456,7 +564,10 @@ func Markdown(j Journal) string {
 			val = strconv.FormatFloat(*r.Value, 'g', 4, 64)
 		}
 		ok := "sim"
-		if !r.OK {
+		switch {
+		case r.Inconclusive:
+			ok = "sem medição"
+		case !r.OK:
 			ok = "**não**"
 		}
 		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s |\n", r.Phase, r.What, ok, val, strings.ReplaceAll(r.Detail, "|", "/"))

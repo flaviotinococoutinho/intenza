@@ -10,6 +10,7 @@
 package chaos
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -127,6 +128,10 @@ type HTTPProbe struct {
 // PromQLProbe evaluates an instant query; the first sample is the value.
 type PromQLProbe struct {
 	Query string `yaml:"query" json:"query"`
+	// Delta reads a counter as its growth since the start of the run; a
+	// missing series counts as zero, which is what a counter that never
+	// moved looks like.
+	Delta bool `yaml:"delta,omitempty" json:"delta,omitempty"`
 }
 
 // MongoProbe counts documents (or runs an aggregation returning {n}).
@@ -148,12 +153,39 @@ func LoadExperiment(path string) (Experiment, error) {
 	if err != nil {
 		return Experiment{}, err
 	}
+	// strict: an unknown key is a typo or, in flow style, an unquoted comma
+	// that split a value ("2,5 s" becomes "2" and a stray key "5 s")
 	var e Experiment
-	if err := yaml.Unmarshal(raw, &e); err != nil {
+	dec := yaml.NewDecoder(bytes.NewReader(raw))
+	dec.KnownFields(true)
+	if err := dec.Decode(&e); err != nil {
 		return Experiment{}, fmt.Errorf("%s: %w", path, err)
 	}
 	if e.ID == "" || e.Hypothesis == "" || e.Risk == "" || len(e.Method) == 0 {
 		return Experiment{}, fmt.Errorf("%s: id, hypothesis, risk e method são obrigatórios", path)
 	}
+	seen := map[string]bool{}
+	for _, p := range e.deltaProbes() {
+		if seen[p.Name] {
+			return Experiment{}, fmt.Errorf("%s: sondas delta precisam de nomes únicos (%q)", path, p.Name)
+		}
+		seen[p.Name] = true
+	}
 	return e, nil
+}
+
+// deltaProbes lists the probes read as growth since the start of the run.
+func (e Experiment) deltaProbes() []Probe {
+	var out []Probe
+	for _, s := range e.Method {
+		if s.Probe != nil && s.Probe.PromQL != nil && s.Probe.PromQL.Delta {
+			out = append(out, *s.Probe)
+		}
+	}
+	for _, p := range e.Verify {
+		if p.PromQL != nil && p.PromQL.Delta {
+			out = append(out, p)
+		}
+	}
+	return out
 }

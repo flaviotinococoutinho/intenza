@@ -105,8 +105,10 @@ func (r *Runner) sealedUnderSkew(ctx context.Context) (float64, error) {
 	if _, err := r.api(ctx, http.MethodGet, "/v1/intents/"+in.ID, "", nil, &view); err != nil {
 		return 0, err
 	}
-	if view.EffectiveStatus != "closed" {
-		return 0, fmt.Errorf("o relógio não estava adiantado (efetivo %q): sonda inválida", view.EffectiveStatus)
+	// closed or expired both mean the local clock is past the deadline that
+	// the database has not reached; anything else and the fault is not there
+	if view.EffectiveStatus != "closed" && view.EffectiveStatus != "expired" {
+		return 0, inconclusive("o relógio da api não estava adiantado (efetivo %q)", view.EffectiveStatus)
 	}
 	var ps []map[string]any
 	if _, err := r.api(ctx, http.MethodGet, "/v1/intents/"+in.ID+"/proposals", buyer, nil, &ps); err != nil {
