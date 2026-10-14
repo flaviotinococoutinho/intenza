@@ -402,6 +402,7 @@ claims:
     about: [reputation]
     kind: performance
     basis: conjecture
+    notes: Dívida declarada. Hoje não há cache de reputação; ranking, perfil e fan-out buscam as avaliações no Mongo e recalculam a posterior. O cache entra quando a carga mostrar o gargalo, já com a expiração antecipada.
 
   # --- reputação ------------------------------------------------------------
   - id: reputation-shrinks-small-samples

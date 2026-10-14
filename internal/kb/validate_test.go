@@ -183,3 +183,15 @@ func TestRenderIsDeterministic(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderCarriesClaimNotes(t *testing.T) {
+	b, f := fixture()
+	if strings.Contains(string(Render(b, f, Validate(b, f))), "### Ressalvas") {
+		t.Fatal("no notes, no section")
+	}
+	b.Claims[0].Notes = "prova o mecanismo,\n  não o efeito"
+	got := string(Render(b, f, Validate(b, f)))
+	if !strings.Contains(got, "### Ressalvas\n\n- **one-deal**: prova o mecanismo, não o efeito\n") {
+		t.Errorf("notes not rendered:\n%s", got)
+	}
+}

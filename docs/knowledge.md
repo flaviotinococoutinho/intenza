@@ -112,6 +112,14 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | **rate-limit-protects-p99** | Na corrida de última hora, o limite GCRA mantém o p99 de envio de proposta abaixo de 500 ms para quem está dentro da cota. | performance | conjectura |  |
 | **reconciliation-converges** | Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos. | liveness | conjectura |  |
 
+### Ressalvas
+
+- **intent-creation-idempotent**: O id da intenção é um UUIDv8 derivado de comprador e chave; o _id único do Mongo é a garantia. O Redis não participa da idempotência.
+- **no-bid-after-close**: O envio grava a intenção com a guarda status open e closes_at maior que $$NOW, na mesma transação. A corrida com o fechador vira conflito de escrita e a nova tentativa já vê a intenção fechada.
+- **exploration-exposes-new-sellers**: Monte Carlo com semente fixa prova o mecanismo, não o efeito no mercado. O risco segue exposto até haver medição com carga.
+- **single-award-per-intent**: A máquina de estados recusa a segunda adjudicação, a versão da intenção barra a escrita concorrente e o índice único em agreements.intent_id é o último piso.
+- **cache-early-refresh**: Dívida declarada. Hoje não há cache de reputação; ranking, perfil e fan-out buscam as avaliações no Mongo e recalculam a posterior. O cache entra quando a carga mostrar o gargalo, já com a expiração antecipada.
+
 ## Ontologia
 
 Categorias inspiradas na UFO: o *kind* dá identidade, *role* e *phase* são anti-rígidos, o *relator* (contrato, escrow) existe entre partes, a categoria é um *tipo de alta ordem* que classifica itens e define as qualidades que eles carregam.
