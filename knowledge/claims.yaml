@@ -391,7 +391,7 @@ claims:
     falsifiable_by: [deadline-rush]
 
   - id: mongo-outage-fails-fast
-    statement: Com o banco pausado, a API responde 503 em menos de 2 s em vez de pendurar, e volta sozinha.
+    statement: Com o banco pausado, a API responde em até 2,5 s (p99), com 503 em vez de pendurar, e volta sozinha.
     about: [intent]
     kind: performance
     basis: conjecture

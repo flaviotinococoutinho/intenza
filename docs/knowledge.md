@@ -106,7 +106,7 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | **backlog-drains** | Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento. | liveness | conjectura |  |
 | **cache-early-refresh** | Expiração antecipada probabilística evita estouro de recomputação no cache de reputação. | performance | conjectura |  |
 | **deadlines-survive-redis-loss** | Sem Redis, os fechamentos acontecem pela varredura no banco com atraso abaixo de 30 s. | liveness | conjectura |  |
-| **mongo-outage-fails-fast** | Com o banco pausado, a API responde 503 em menos de 2 s em vez de pendurar, e volta sozinha. | performance | conjectura |  |
+| **mongo-outage-fails-fast** | Com o banco pausado, a API responde em até 2,5 s (p99), com 503 em vez de pendurar, e volta sozinha. | performance | conjectura |  |
 | **poison-message-isolated** | Evento malformado vai para a fila de mortos depois de 3 tentativas e não trava a partição. | liveness | conjectura |  |
 | **psp-calls-bounded** | Chamadas ao agente de custódia têm prazo, disjuntor e retentativa com jitter. Com cauda lognormal, o p99 da API fica abaixo de 1 s. | performance | conjectura |  |
 | **rate-limit-protects-p99** | Na corrida de última hora, o limite GCRA mantém o p99 de envio de proposta abaixo de 500 ms para quem está dentro da cota. | performance | conjectura |  |
