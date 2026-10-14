@@ -66,7 +66,18 @@ claims:
     statement: Disputa é conferência de campos. Cada reclamação compara esperado contra observado de um atributo probatório do schema congelado.
     about: [dispute, field-claim, attribute]
     kind: integrity
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/domain/schema.TestConferenceOnlyAboutEvidentiaryTerms
+
+  - id: generated-items-satisfy-own-predicates
+    statement: Em qualquer folha do catálogo, um item sorteado válido passa no parser, satisfaz as restrições derivadas dele e não diverge de si na conferência.
+    about: [attribute-schema, attribute]
+    kind: integrity
+    basis: property-tested
+    evidence:
+      - test: internal/domain/schema.TestGeneratedItemsRoundTripOnEveryLeaf
+      - test: internal/domain/schema.TestAdherenceIsBounded
 
   # --- dinheiro -------------------------------------------------------------
   - id: platform-never-holds-funds
@@ -116,19 +127,37 @@ claims:
     statement: Categorias proibidas (armas, medicamentos, animais, tabaco, álcool) não existem na árvore, e um identificador de categoria só nasce de um nó dela.
     about: [category]
     kind: safety
-    basis: conjecture
+    basis: by-construction
+    evidence:
+      - symbol: internal/domain/taxonomy.Tree.Lookup
+      - test: internal/domain/taxonomy.TestForbiddenCategoriesDoNotExist
+      - test: internal/domain/taxonomy.TestLoaderRefusesForbiddenAnchorsAndTerms
 
   - id: autoparts-restricted-by-design
     statement: Autopeças só aceitam vendedor com credencial de desmonte e peça com código de rastreabilidade. Sistemas de segurança não existem na árvore.
     about: [category, seller]
     kind: regulatory
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/domain/taxonomy.TestDefaultCatalogShape
+      - test: internal/domain/taxonomy.TestLoaderRefusesForbiddenAnchorsAndTerms
+
+  - id: dismantling-law
+    statement: Desmonte de veículo exige credenciamento no órgão de trânsito do estado e peças com rastreabilidade até o veículo de origem.
+    about: [category, seller]
+    kind: regulatory
+    basis: testimony
+    review: pending
+    evidence:
+      - source: Lei nº 12.977/2014 (Lei do Desmonte) e regulamentação do CONTRAN
 
   - id: identifiers-check-digit-validated
     statement: Identificadores normativos (GTIN, ISBN, VIN, CPF, CNPJ, RENAVAM) passam pelo dígito verificador antes de virar prova.
     about: [gtin, isbn, vin, cpf, cnpj, renavam]
     kind: integrity
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/domain/schema.TestNormativeKindsValidateThroughStandards
 
   - id: check-digits-catch-single-substitutions
     statement: GTIN, ISBN-10 e VIN detectam toda substituição de um caractere. No VIN, a exceção são letras com a mesma transliteração (A e J valem 1).

@@ -7,4 +7,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5
 )
 
+require pgregory.net/rapid v1.3.0 // indirect
+
 replace github.com/flaviotinococoutinho/intenza/standards => ./standards

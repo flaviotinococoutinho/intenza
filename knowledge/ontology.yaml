@@ -58,6 +58,7 @@ concepts:
     label: Nicho
     category: collective
     definition: Coletivo de categorias com o mesmo regime regulatório e a mesma onda de lançamento (colecionáveis, moda circular, autopeças).
+    realized_by: [internal/domain/taxonomy.Category.Niche]
 
   - id: category
     label: Categoria
@@ -66,18 +67,21 @@ concepts:
     classifies: item
     part_of: niche
     definition: Tipo de alta ordem, suas instâncias são tipos de item (carta TCG, tênis, porta dianteira). Ancora no MCC e define as qualidades que o item carrega.
+    realized_by: [internal/domain/taxonomy.Category]
 
   - id: attribute-schema
     label: Schema de atributos
     category: information
     part_of: category
     definition: Artefato versionado com as qualidades tipadas de uma categoria. Herda presets dos ancestrais na árvore.
+    realized_by: [internal/domain/schema.Schema]
 
   - id: attribute
     label: Atributo
     category: quality
     inheres_in: item
     definition: Qualidade do item valorada numa estrutura de qualidade tipada (enum, faixa, identificador normativo). É a espinha probatória do contrato.
+    realized_by: [internal/domain/schema.Value]
 
   # --- demanda e oferta -----------------------------------------------------
   - id: intent
@@ -159,6 +163,7 @@ concepts:
     category: datatype
     grounded_in: [iso-18245]
     definition: Código de categoria de comerciante que ancora a taxonomia curada.
+    realized_by: [standards/iso/iso18245.MCC]
 
   - id: cpf
     label: CPF

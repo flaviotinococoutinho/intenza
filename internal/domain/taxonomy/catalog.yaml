@@ -1,0 +1,200 @@
+# Taxonomia curada do Intenza.
+#
+# Cada nó ancora num MCC (ISO 18245), herda onda de lançamento, densidade regulatória,
+# exigências do vendedor e presets de atributos do ancestral. Categorias proibidas não
+# existem aqui: o carregador recusa MCC e termos da lista de bloqueio, e um identificador
+# de categoria só nasce de um nó desta árvore.
+
+version: 1
+
+presets:
+  tcg-condition:
+    - {key: condition, label: Estado de conservação, kind: enum, values: [NM, LP, MP, HP, DMG], required: true, evidentiary: true}
+  graded-card:
+    - {key: grading_company, label: Certificadora, kind: enum, values: [none, PSA, BGS, CGC], required: true, evidentiary: true}
+    - key: grade
+      label: Nota da certificação
+      kind: decimal
+      scale: 1
+      min: "1.0"
+      max: "10.0"
+      step: "0.5"
+      evidentiary: true
+      required_if: {field: grading_company, not_in: [none]}
+  authenticity:
+    - {key: authenticity_proof, label: Prova de autenticidade, kind: enum, values: [none, receipt, certificate, legit-check], required: true, evidentiary: true}
+  fitment:
+    - {key: make, label: Montadora, kind: text, max_len: 40, required: true, evidentiary: true}
+    - {key: model, label: Modelo, kind: text, max_len: 60, required: true, evidentiary: true}
+    - {key: year_from, label: Ano inicial de aplicação, kind: year, min: "1950", max: "2027", required: true, evidentiary: true}
+    - {key: year_to, label: Ano final de aplicação, kind: year, min: "1950", max: "2027", required: true, evidentiary: true}
+  dismantled-origin:
+    - {key: origin, label: Origem, kind: enum, values: [new, used, dismantled], required: true, evidentiary: true}
+    - key: traceability_code
+      label: Código de rastreabilidade do desmonte
+      kind: text
+      max_len: 32
+      evidentiary: true
+      required_if: {field: origin, in: [dismantled]}
+    - {key: donor_vin, label: Chassi do veículo doador, kind: vin, evidentiary: true}
+    - {key: donor_renavam, label: RENAVAM do veículo doador, kind: renavam, evidentiary: true}
+
+tree:
+  - id: collectibles
+    label: Colecionáveis
+    wave: 1
+    density: low
+    requires: [kyc-basic]
+    children:
+      - id: tcg
+        label: Cartas colecionáveis (TCG)
+        mcc: 5945
+        presets: [tcg-condition, graded-card]
+        fields:
+          - {key: game, label: Jogo, kind: enum, values: [pokemon, magic, yugioh, onepiece, lorcana], required: true, evidentiary: true}
+          - {key: set_code, label: Código da coleção, kind: text, max_len: 12, required: true, evidentiary: true}
+          - {key: card_number, label: Número da carta, kind: text, max_len: 12, required: true, evidentiary: true}
+          - {key: language, label: Idioma de impressão, kind: language, required: true, evidentiary: true}
+          - {key: finish, label: Acabamento, kind: enum, values: [normal, holo, reverse-holo, foil, full-art], evidentiary: true}
+          - {key: first_edition, label: Primeira edição, kind: bool, evidentiary: true}
+      - id: action-figures
+        label: Action figures
+        mcc: 5945
+        fields:
+          - {key: brand, label: Fabricante, kind: text, max_len: 40, required: true, evidentiary: true}
+          - {key: character, label: Personagem, kind: text, max_len: 60, required: true, evidentiary: true}
+          - {key: line, label: Linha, kind: text, max_len: 60}
+          - {key: year, label: Ano, kind: year, min: "1960", max: "2027", evidentiary: true}
+          - {key: packaging, label: Embalagem, kind: enum, values: [sealed, opened-complete, loose], required: true, evidentiary: true}
+      - id: diecast
+        label: Miniaturas (diecast)
+        mcc: 5945
+        fields:
+          - {key: brand, label: Fabricante, kind: text, max_len: 40, required: true, evidentiary: true}
+          - {key: scale, label: Escala, kind: enum, values: ["1:18", "1:24", "1:43", "1:64"], required: true, evidentiary: true}
+          - {key: model, label: Modelo, kind: text, max_len: 60, required: true, evidentiary: true}
+          - {key: packaging, label: Embalagem, kind: enum, values: [blister, box, loose], evidentiary: true}
+      - id: coins
+        label: Moedas
+        mcc: 5972
+        fields:
+          - {key: country, label: País emissor, kind: country, required: true, evidentiary: true}
+          - {key: year, label: Ano, kind: year, min: "1500", max: "2027", required: true, evidentiary: true}
+          - {key: denomination, label: Valor de face, kind: text, max_len: 30, required: true, evidentiary: true}
+          - {key: metal, label: Metal, kind: enum, values: [gold, silver, copper, nickel, cupronickel, bronze, other], evidentiary: true}
+          - {key: grade_sheldon, label: Grau (escala Sheldon), kind: int, min: "1", max: "70", evidentiary: true}
+          - {key: certification, label: Certificação, kind: enum, values: [none, NGC, PCGS], required: true, evidentiary: true}
+      - id: stamps
+        label: Selos
+        mcc: 5972
+        fields:
+          - {key: country, label: País emissor, kind: country, required: true, evidentiary: true}
+          - {key: year, label: Ano, kind: year, min: "1840", max: "2027", required: true, evidentiary: true}
+          - {key: catalog, label: Catálogo, kind: enum, values: [RHM, Scott, Stanley-Gibbons], required: true}
+          - {key: catalog_number, label: Número no catálogo, kind: text, max_len: 20, required: true, evidentiary: true}
+          - {key: mint, label: Novo (não carimbado), kind: bool, required: true, evidentiary: true}
+      - id: vinyl
+        label: Discos de vinil
+        mcc: 5735
+        fields:
+          - {key: artist, label: Artista, kind: text, max_len: 80, required: true, evidentiary: true}
+          - {key: title, label: Título, kind: text, max_len: 120, required: true, evidentiary: true}
+          - {key: format, label: Formato, kind: enum, values: [LP, EP, 7-inch, 10-inch], required: true, evidentiary: true}
+          - {key: pressing_country, label: País da prensagem, kind: country, evidentiary: true}
+          - {key: year, label: Ano da prensagem, kind: year, min: "1948", max: "2027", evidentiary: true}
+          - {key: catalog_number, label: Número de catálogo, kind: text, max_len: 30, evidentiary: true}
+          - {key: media_grade, label: Grau da mídia (Goldmine), kind: enum, values: [M, NM, VG+, VG, G+, G, F, P], required: true, evidentiary: true}
+          - {key: sleeve_grade, label: Grau da capa (Goldmine), kind: enum, values: [M, NM, VG+, VG, G+, G, F, P], evidentiary: true}
+      - id: rare-books
+        label: Livros raros
+        mcc: 5942
+        fields:
+          - {key: title, label: Título, kind: text, max_len: 160, required: true, evidentiary: true}
+          - {key: author, label: Autor, kind: text, max_len: 120, required: true, evidentiary: true}
+          - {key: isbn, label: ISBN, kind: isbn, evidentiary: true}
+          - {key: year, label: Ano da edição, kind: year, min: "1450", max: "2027", required: true, evidentiary: true}
+          - {key: edition, label: Edição, kind: text, max_len: 40, evidentiary: true}
+          - {key: binding, label: Encadernação, kind: enum, values: [hardcover, paperback, leather], evidentiary: true}
+          - {key: book_condition, label: Estado, kind: enum, values: [fine, very-good, good, fair, poor], required: true, evidentiary: true}
+          - {key: signed, label: Autografado, kind: bool, evidentiary: true}
+
+  - id: circular-fashion
+    label: Moda circular
+    wave: 2
+    density: medium
+    requires: [kyc-basic]
+    presets: [authenticity]
+    children:
+      - id: sneakers
+        label: Tênis
+        mcc: 5661
+        fields:
+          - {key: brand, label: Marca, kind: text, max_len: 40, required: true, evidentiary: true}
+          - {key: model, label: Modelo, kind: text, max_len: 60, required: true, evidentiary: true}
+          - {key: style_code, label: Código de estilo, kind: text, max_len: 20, evidentiary: true}
+          - {key: gtin, label: GTIN da caixa, kind: gtin, evidentiary: true}
+          - {key: size_br, label: Numeração (BR), kind: decimal, scale: 1, min: "33.0", max: "48.0", step: "0.5", required: true, evidentiary: true}
+          - {key: condition, label: Estado, kind: enum, values: [deadstock, vnds, used], required: true, evidentiary: true}
+          - {key: original_box, label: Caixa original, kind: bool, evidentiary: true}
+      - id: handbags
+        label: Bolsas
+        mcc: 5948
+        fields:
+          - {key: brand, label: Marca, kind: text, max_len: 40, required: true, evidentiary: true}
+          - {key: model, label: Modelo, kind: text, max_len: 60, required: true, evidentiary: true}
+          - {key: material, label: Material, kind: enum, values: [leather, canvas, synthetic, other], required: true, evidentiary: true}
+          - {key: color, label: Cor, kind: text, max_len: 30}
+          - {key: serial_or_date_code, label: Número de série ou date code, kind: text, max_len: 30, evidentiary: true}
+          - {key: condition, label: Estado, kind: enum, values: [new, excellent, good, fair], required: true, evidentiary: true}
+      - id: watches
+        label: Relógios
+        mcc: 5944
+        fields:
+          - {key: brand, label: Marca, kind: text, max_len: 40, required: true, evidentiary: true}
+          - {key: model, label: Modelo, kind: text, max_len: 60, required: true, evidentiary: true}
+          - {key: reference, label: Referência, kind: text, max_len: 30, required: true, evidentiary: true}
+          - {key: movement, label: Movimento, kind: enum, values: [automatic, manual, quartz], required: true, evidentiary: true}
+          - {key: case_mm, label: Caixa (mm), kind: int, min: "20", max: "55", unit: mm, evidentiary: true}
+          - {key: box_papers, label: Caixa e certificado, kind: enum, values: [none, box, papers, full-set], required: true, evidentiary: true}
+          - {key: year, label: Ano, kind: year, min: "1900", max: "2027"}
+      - id: vintage-apparel
+        label: Roupas vintage
+        mcc: 5699
+        fields:
+          - {key: garment, label: Peça, kind: enum, values: [jacket, shirt, dress, pants, sweater, other], required: true, evidentiary: true}
+          - {key: brand, label: Marca, kind: text, max_len: 40, evidentiary: true}
+          - {key: size_label, label: Tamanho na etiqueta, kind: text, max_len: 10}
+          - {key: chest_cm, label: Busto (cm), kind: int, min: "20", max: "200", unit: cm, evidentiary: true}
+          - {key: length_cm, label: Comprimento (cm), kind: int, min: "20", max: "200", unit: cm, evidentiary: true}
+          - {key: decade, label: Década, kind: enum, values: [1950s, 1960s, 1970s, 1980s, 1990s, 2000s]}
+          - {key: condition, label: Estado, kind: enum, values: [excellent, good, fair], required: true, evidentiary: true}
+
+  - id: auto-parts
+    label: Autopeças
+    wave: 3
+    density: high
+    requires: [kyc-basic, business, dismantler-registry]
+    presets: [fitment, dismantled-origin]
+    children:
+      - id: body-panels
+        label: Lataria
+        mcc: 5533
+        fields:
+          - {key: part, label: Peça, kind: enum, values: [door, hood, fender, bumper, tailgate, roof, quarter-panel], required: true, evidentiary: true}
+          - {key: side, label: Lado, kind: enum, values: [left, right, front, rear, na], required: true, evidentiary: true}
+          - {key: color_code, label: Código de cor, kind: text, max_len: 12, evidentiary: true}
+      - id: interior-trim
+        label: Acabamento interno
+        mcc: 5533
+        fields:
+          - {key: part, label: Peça, kind: enum, values: [dashboard-trim, door-panel, console, headliner, seat-cover], required: true, evidentiary: true}
+          - {key: color, label: Cor, kind: text, max_len: 30}
+      - id: engines-gearboxes
+        label: Motores e câmbios
+        mcc: 5935
+        fields:
+          - {key: assembly, label: Conjunto, kind: enum, values: [engine, gearbox], required: true, evidentiary: true}
+          - {key: engine_number, label: Número do motor, kind: text, max_len: 20, required: true, evidentiary: true}
+          - {key: displacement_cc, label: Cilindrada (cc), kind: int, min: "50", max: "8000", unit: cc, evidentiary: true}
+          - {key: fuel, label: Combustível, kind: enum, values: [gasoline, ethanol, flex, diesel], evidentiary: true}
+          - {key: mileage_km, label: Quilometragem, kind: int, min: "0", max: "2000000", unit: km, evidentiary: true}
