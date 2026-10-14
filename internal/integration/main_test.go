@@ -23,6 +23,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcmongo "github.com/testcontainers/testcontainers-go/modules/mongodb"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
+	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 
 	"github.com/flaviotinococoutinho/intenza/internal/adapter/httpapi"
 	"github.com/flaviotinococoutinho/intenza/internal/adapter/mongo"
@@ -42,6 +43,7 @@ import (
 var (
 	mongoURI  string
 	redisAddr string
+	broker    string
 	dbSeq     atomic.Int64
 )
 
@@ -69,11 +71,22 @@ func TestMain(m *testing.M) {
 	}
 	raw, _ := rc.ConnectionString(ctx)
 	redisAddr = strings.TrimPrefix(raw, "redis://")
+	kc, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v25.2.4", redpanda.WithAutoCreateTopics())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "redpanda container:", err)
+		os.Exit(1)
+	}
+	if broker, err = kc.KafkaSeedBroker(ctx); err != nil {
+		os.Exit(1)
+	}
 	code := m.Run()
 	_ = testcontainers.TerminateContainer(mc)
 	_ = testcontainers.TerminateContainer(rc)
+	_ = testcontainers.TerminateContainer(kc)
 	os.Exit(code)
 }
+
+const webhookSecret = "test-webhook-secret"
 
 type env struct {
 	t      *testing.T
@@ -102,7 +115,10 @@ func newEnv(t *testing.T, withRedis bool) *env {
 		},
 		Settlement: agreement.DefaultPolicy, RatingDays: 14, Log: log,
 	}
-	deps := httpapi.Deps{Market: m, JWTSecret: []byte("test-secret"), DevAuth: true, MaxInFlight: 256, Log: log}
+	deps := httpapi.Deps{
+		Market: m, JWTSecret: []byte("test-secret"), DevAuth: true, MaxInFlight: 256, Log: log,
+		Back: store, WebhookKey: []byte(webhookSecret),
+	}
 	if withRedis {
 		rdb, err := redis.Connect(redisAddr, time.Second)
 		if err != nil {
