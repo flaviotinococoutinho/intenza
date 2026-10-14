@@ -113,3 +113,60 @@ type IDs interface {
 type Clock interface {
 	Now() time.Time
 }
+
+// EscrowStatus is the escrow agent's view of an escrow.
+type EscrowStatus string
+
+const (
+	EscrowPending  EscrowStatus = "pending"
+	EscrowHeld     EscrowStatus = "held"
+	EscrowReleased EscrowStatus = "released"
+	EscrowRefunded EscrowStatus = "refunded"
+)
+
+// EscrowRequest opens an escrow for an agreement.
+type EscrowRequest struct {
+	Reference      string
+	IdempotencyKey string
+	AmountMinor    int64
+	Currency       string
+	MCC            string
+	Payer, Payee   string
+}
+
+// EscrowRef is what the agent answers: its id and the Pix payment code.
+type EscrowRef struct {
+	ID          string
+	PaymentCode string
+}
+
+// Escrow is the port to the authorized payment institution. It has no
+// operation that moves money to the platform: the platform can only open an
+// escrow and command its release to the seller or its refund to the buyer.
+type Escrow interface {
+	Open(ctx context.Context, r EscrowRequest) (EscrowRef, error)
+	Release(ctx context.Context, escrowID, idempotencyKey string) error
+	Refund(ctx context.Context, escrowID, idempotencyKey string) error
+	Status(ctx context.Context, escrowID string) (EscrowStatus, error)
+}
+
+// Notification tells a seller about an intent it may answer.
+type Notification struct {
+	PartyID   string    `json:"party_id"`
+	IntentID  string    `json:"intent_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// Inbox applies a consumer's effect at most once per event.
+type Inbox interface {
+	Once(ctx context.Context, consumer, eventID string, fn func(ctx context.Context, tx Tx) error) (bool, error)
+}
+
+// Backoffice holds the queries the workers need.
+type Backoffice interface {
+	PendingSettlements(ctx context.Context, olderThan time.Duration, limit int) ([]agreement.Agreement, error)
+	FormedWithoutEscrow(ctx context.Context, olderThan time.Duration, limit int) ([]agreement.Agreement, error)
+	EligibleSellers(ctx context.Context, required []string, exclude string, limit int) ([]Party, error)
+	Notify(ctx context.Context, intentID string, partyIDs []string) error
+	Notifications(ctx context.Context, partyID string, limit int) ([]Notification, error)
+}
