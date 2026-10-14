@@ -27,7 +27,8 @@ x-intenza: &intenza
     INTENZA_SELECTION_WINDOW: PT10M
     INTENZA_FUNDING_WINDOW: PT5M
     INTENZA_INSPECTION_WINDOW: PT2M
-    OTEL_EXPORTER_OTLP_ENDPOINT: jaeger:4317
+    # traces only when jaeger is up (make up-obs); empty turns the exporter off
+    OTEL_EXPORTER_OTLP_ENDPOINT: ${OTLP_ENDPOINT:-}
 
 services:
   mongo:

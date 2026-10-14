@@ -65,7 +65,7 @@ up: linux-binaries ## sobe a pilha (mongo, redis, kafka, toxiproxy, serviços e 
 	$(COMPOSE) up -d --build --wait
 
 up-obs: linux-binaries ## sobe também grafana (localhost:3000) e jaeger (localhost:16686)
-	$(COMPOSE) --profile obs up -d --build --wait
+	OTLP_ENDPOINT=jaeger:4317 $(COMPOSE) --profile obs up -d --build --wait
 
 down: ## derruba a pilha e apaga os volumes
 	$(COMPOSE) --profile obs down -v
