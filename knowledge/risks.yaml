@@ -1,0 +1,277 @@
+# O que pode dar errado, como cadeia causal.
+#
+# uncertainty: aleatoric (aleatoriedade irredutível) | epistemic (falta de conhecimento)
+# solution:    deterministic (remove o modo de falha, se justifica a priori)
+#              stochastic    (reduz probabilidade/impacto, só se justifica medindo)
+#              hybrid        (piso determinístico + teto medido)
+# severity e likelihood vão de 1 a 5.
+
+risks:
+  - id: bid-leak
+    title: Vazamento de preço selado
+    uncertainty: epistemic
+    solution: deterministic
+    cause: Caminho não previsto expõe o preço (log, evento, dump, consulta ampla, revelação antecipada).
+    mechanism: Concorrente ou comprador vê preços antes do fechamento e passa a ancorar ou combinar.
+    effect: A proposta selada vira leilão aberto disfarçado e os melhores vendedores saem.
+    signals: [intenza_seal_open_denied_total]
+    severity: 5
+    likelihood: 3
+    mitigated_by: [sealed-price-encrypted-at-rest, reveal-gated-by-persisted-close, events-carry-no-price]
+
+  - id: clock-skew
+    title: Relógio de um nó fora do lugar
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: NTP falha ou VM pausa e o relógio local adianta ou atrasa.
+    mechanism: Decisões de prazo tomadas com o relógio local discordam entre nós.
+    effect: Proposta aceita depois do prazo ou envelope aberto antes da hora.
+    severity: 4
+    likelihood: 2
+    mitigated_by: [reveal-gated-by-persisted-close, effective-status-is-time-function]
+
+  - id: late-bid
+    title: Proposta aceita depois do prazo
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: Envio e fechamento correm no mesmo instante.
+    mechanism: A checagem de prazo e a gravação acontecem em momentos diferentes.
+    effect: Vendedor que viu o fechamento chegando entra depois e quebra a isonomia.
+    severity: 4
+    likelihood: 3
+    mitigated_by: [no-bid-after-close]
+
+  - id: double-award
+    title: Duas propostas escolhidas para a mesma intenção
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: Clique duplo, retentativa do cliente ou duas abas.
+    mechanism: Duas seleções leem a intenção aberta e gravam em paralelo.
+    effect: Dois acordos e dois escrows para um item só.
+    severity: 5
+    likelihood: 2
+    mitigated_by: [single-award-per-intent]
+
+  - id: double-settlement
+    title: Liberação ou estorno disparado duas vezes, ou os dois
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: Evento redelivery, webhook duplicado ou retentativa após timeout.
+    mechanism: O comando ao agente de custódia é reenviado sem chave ou o estado não é terminal.
+    effect: Dinheiro liberado e estornado, ou liberado duas vezes.
+    severity: 5
+    likelihood: 3
+    mitigated_by: [escrow-command-idempotent, settlement-terminal-exclusive, webhook-handling-idempotent]
+
+  - id: funds-custody
+    title: Dinheiro transitando por conta própria
+    uncertainty: epistemic
+    solution: deterministic
+    cause: Atalho de produto para simplificar repasse ou estorno.
+    mechanism: A plataforma passa a custodiar recursos de terceiros.
+    effect: Exposição regulatória e risco de crédito sobre o valor dos clientes.
+    severity: 5
+    likelihood: 1
+    mitigated_by: [platform-never-holds-funds, payment-institution-regulated]
+
+  - id: forbidden-category
+    title: Anúncio em categoria proibida
+    uncertainty: epistemic
+    solution: deterministic
+    cause: Erro de curadoria ou categoria genérica demais.
+    mechanism: Intenção é publicada num nó que admite item proibido.
+    effect: Venda de arma, medicamento ou animal pela plataforma.
+    severity: 5
+    likelihood: 2
+    mitigated_by: [forbidden-categories-unrepresentable]
+
+  - id: autoparts-regulatory
+    title: Peça de desmonte sem rastreabilidade ou item de segurança
+    uncertainty: epistemic
+    solution: deterministic
+    cause: Autopeças concentram a maior densidade regulatória.
+    mechanism: Vendedor sem credencial ou peça sem etiqueta entra na árvore.
+    effect: Receptação, risco à segurança viária e sanção.
+    severity: 5
+    likelihood: 2
+    mitigated_by: [autoparts-restricted-by-design, identifiers-check-digit-validated]
+
+  - id: he-said-she-said
+    title: Disputa sem base objetiva
+    uncertainty: epistemic
+    solution: deterministic
+    cause: Descrição livre e prova informal.
+    mechanism: Ninguém consegue dizer o que foi prometido.
+    effect: Resolução arbitrária, custo de suporte e reputação injusta.
+    severity: 4
+    likelihood: 4
+    mitigated_by: [terms-snapshot-tamper-evident, dispute-is-field-conference]
+
+  - id: invalid-identifier
+    title: Identificador digitado errado vira prova falsa
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: Erro de digitação em GTIN, VIN, ISBN ou documento.
+    mechanism: O campo probatório guarda um identificador que não existe.
+    effect: Contrato aponta para outro item ou para ninguém.
+    severity: 3
+    likelihood: 4
+    mitigated_by: [identifiers-check-digit-validated]
+
+  - id: lost-event
+    title: Evento perdido entre banco e broker
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: Escrita dupla em banco e broker sem transação comum.
+    mechanism: O processo cai depois de gravar o estado e antes de publicar.
+    effect: Projeções e sagas nunca ficam sabendo da mudança.
+    severity: 4
+    likelihood: 3
+    mitigated_by: [outbox-atomic-with-state]
+
+  - id: duplicate-processing
+    title: Evento aplicado duas vezes
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: Entrega pelo menos uma vez (retentativa, rebalanceamento, relay que cai antes do checkpoint).
+    mechanism: O consumidor reaplica o efeito do mesmo evento.
+    effect: Reputação contada em dobro, notificação repetida, comando duplicado.
+    severity: 4
+    likelihood: 4
+    mitigated_by: [consumers-effectively-once]
+
+  - id: duplicate-intent
+    title: Retentativa do cliente cria intenção duplicada
+    uncertainty: aleatoric
+    solution: deterministic
+    cause: Timeout no cliente depois que o servidor já gravou.
+    mechanism: O mesmo pedido chega duas vezes.
+    effect: Duas intenções iguais e vendedores respondendo em dobro.
+    severity: 3
+    likelihood: 4
+    mitigated_by: [intent-creation-idempotent]
+
+  - id: webhook-loss
+    title: Webhook do agente de custódia perdido, duplicado ou fora de ordem
+    uncertainty: aleatoric
+    solution: hybrid
+    cause: Rede, retentativa do agente ou indisponibilidade da API.
+    mechanism: A plataforma não fica sabendo que o dinheiro caiu ou foi liberado.
+    effect: Acordo preso, vendedor sem enviar, comprador sem resposta.
+    severity: 4
+    likelihood: 4
+    mitigated_by: [webhook-handling-idempotent, reconciliation-converges]
+
+  - id: psp-latency-tail
+    title: Cauda de latência do agente de custódia
+    uncertainty: aleatoric
+    solution: stochastic
+    cause: Agente externo com latência lognormal e picos.
+    mechanism: Chamadas presas seguram conexões e goroutines e a fila cresce.
+    effect: Latência da API sobe para todo mundo, não só para quem paga.
+    signals: [intenza_psp_request_duration_seconds, intenza_breaker_state]
+    severity: 4
+    likelihood: 4
+    mitigated_by: [psp-calls-bounded]
+
+  - id: broker-outage
+    title: Broker indisponível
+    uncertainty: aleatoric
+    solution: hybrid
+    cause: Broker cai, pausa ou perde a rede.
+    mechanism: O relay não publica e o outbox acumula.
+    effect: Projeções e sagas atrasam, mas a escrita continua aceitando.
+    signals: [intenza_outbox_oldest_age_seconds]
+    severity: 4
+    likelihood: 3
+    mitigated_by: [outbox-atomic-with-state, backlog-drains]
+
+  - id: redis-outage
+    title: Redis indisponível
+    uncertainty: aleatoric
+    solution: hybrid
+    cause: Redis cai, pausa ou fica lento.
+    mechanism: Idempotência rápida, limite de taxa, prazos e cache perdem o apoio.
+    effect: Duplicata, rajada sem limite ou fechamento atrasado se não houver degradação planejada.
+    signals: [intenza_redis_errors_total]
+    severity: 4
+    likelihood: 3
+    mitigated_by: [intent-creation-idempotent, deadlines-survive-redis-loss]
+
+  - id: deadline-herd
+    title: Rajada de última hora no fechamento
+    uncertainty: aleatoric
+    solution: stochastic
+    cause: Vendedores deixam para o fim e muitos prazos vencem juntos.
+    mechanism: A taxa de chegada cresce perto do prazo e os fechamentos se acumulam.
+    effect: Latência sobe exatamente quando importa e propostas perdem o prazo.
+    signals: [intenza_ratelimit_rejected_total]
+    severity: 3
+    likelihood: 4
+    mitigated_by: [rate-limit-protects-p99]
+
+  - id: database-outage
+    title: Banco indisponível
+    uncertainty: aleatoric
+    solution: stochastic
+    cause: Primário pausa, cai ou troca.
+    mechanism: Chamadas ficam esperando conexão e acumulam.
+    effect: A API pendura em vez de falhar rápido.
+    severity: 4
+    likelihood: 2
+    mitigated_by: [mongo-outage-fails-fast]
+
+  - id: poison-message
+    title: Evento malformado trava o consumidor
+    uncertainty: epistemic
+    solution: hybrid
+    cause: Versão de esquema inesperada ou dado corrompido.
+    mechanism: O consumidor falha sempre no mesmo offset.
+    effect: A partição para e o atraso cresce sem limite.
+    severity: 3
+    likelihood: 2
+    mitigated_by: [poison-message-isolated]
+
+  - id: cache-stampede
+    title: Estouro de recomputação no cache
+    uncertainty: aleatoric
+    solution: stochastic
+    cause: Muitas chaves expiram juntas sob carga.
+    mechanism: Todas as réplicas recomputam a mesma coisa ao mesmo tempo.
+    effect: Pico de carga no banco e latência em degrau.
+    severity: 2
+    likelihood: 3
+    mitigated_by: [cache-early-refresh]
+
+  - id: cold-start-seller
+    title: Vendedor novo nunca vence
+    uncertainty: epistemic
+    solution: stochastic
+    cause: Sem histórico, a reputação é desconhecida.
+    mechanism: Ordenação por reputação pontual favorece sempre quem já vende.
+    effect: Concentração de mercado e oferta estagnada.
+    severity: 3
+    likelihood: 4
+    mitigated_by: [reputation-shrinks-small-samples, exploration-exposes-new-sellers]
+
+  - id: retaliation
+    title: Avaliação retaliatória
+    uncertainty: epistemic
+    solution: deterministic
+    cause: Uma parte vê a avaliação da outra antes de avaliar.
+    mechanism: Nota baixa provoca nota baixa de volta.
+    effect: Reputação vira negociação e perde sinal.
+    severity: 3
+    likelihood: 3
+    mitigated_by: [ratings-double-blind]
+
+  - id: biased-ranking
+    title: Ordenação arbitrária ou manipulável
+    uncertainty: epistemic
+    solution: deterministic
+    cause: Critério opaco ou dependente da ordem de chegada.
+    mechanism: Duas consultas iguais devolvem ordens diferentes.
+    effect: Comprador desconfia e vendedor otimiza o horário em vez da oferta.
+    severity: 3
+    likelihood: 2
+    mitigated_by: [selection-deterministic-explainable]

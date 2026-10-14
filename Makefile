@@ -10,7 +10,7 @@ GOLANGCI := $(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(G
 GOVULNCHECK := $(GO) run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 .DEFAULT_GOAL := help
-.PHONY: help tidy fmt lint test test-race test-integration cover bench vuln generate generate-check check
+.PHONY: help tidy fmt lint test test-race test-integration cover bench vuln generate generate-check check kb
 
 help: ## lista os alvos
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -49,3 +49,6 @@ generate-check: generate ## falha se o código gerado não estiver em dia
 	@git diff --exit-code --stat -- . || (echo "código gerado desatualizado: rode make generate" && exit 1)
 
 check: lint test-race generate-check ## o mesmo que a CI roda
+
+kb: ## confere a base de conhecimento contra o código
+	$(GO) run ./cmd/intenza-kb check
