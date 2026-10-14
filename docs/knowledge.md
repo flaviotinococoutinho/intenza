@@ -11,14 +11,14 @@ A priori vale para toda entrada no escopo (conhecimento determinístico). A post
 | base | modo | força | alegações |
 |---|---|---:|---:|
 | por construção | a priori | 7 | 0 |
-| prova exaustiva | a priori | 6 | 0 |
-| teste de propriedade | a priori | 5 | 0 |
-| teste de exemplo | a priori | 4 | 0 |
+| prova exaustiva | a priori | 6 | 2 |
+| teste de propriedade | a priori | 5 | 2 |
+| teste de exemplo | a priori | 4 | 2 |
 | medido | a posteriori | 3 | 0 |
-| testemunho | testemunhal | 2 | 0 |
+| testemunho | testemunhal | 2 | 1 |
 | conjectura | sem justificativa | 1 | 31 |
 
-Dívida epistêmica: **31 de 31** alegações ainda são conjecturas.
+Dívida epistêmica: **31 de 38** alegações ainda são conjecturas.
 
 ## Riscos
 
@@ -64,6 +64,13 @@ Mitigados com a evidência certa para a natureza da solução: **0 de 24**.
 
 | alegação | enunciado | tipo | base | evidência |
 |---|---|---|---|---|
+| **check-digits-catch-single-substitutions** | GTIN, ISBN-10 e VIN detectam toda substituição de um caractere. No VIN, a exceção são letras com a mesma transliteração (A e J valem 1). | integrity | prova exaustiva | teste `standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown`<br>teste `standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition`<br>teste `standards/iso/iso3779.TestEverySubstitutionChangesTheCheckOrCollidesInTransliteration` |
+| **gtin-misses-transpositions-by-five** | O dígito do GTIN não detecta troca de vizinhos que diferem em 5 (05 por 50). O ISBN-10 detecta toda troca de vizinhos. | integrity | prova exaustiva | teste `standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown`<br>teste `standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition` |
+| **cnpj-alphanumeric-extends-legacy** | A regra do CNPJ alfanumérico coincide com a regra numérica antiga em toda base só de dígitos. | integrity | teste de propriedade | teste `standards/rfb/cnpj.TestAlphanumericRuleAgreesWithLegacyOnDigits` |
+| **cpf-check-is-imperfect** | O CPF deixa passar cerca de 0,2% das substituições de um dígito, porque os restos 0 e 1 viram o mesmo dígito. | integrity | teste de propriedade | teste `standards/rfb/cpf.TestSingleSubstitutionDetectionRate` |
+| **normative-lookups-allocation-free** | Consultas por código nas normas são O(1) e não alocam memória. | performance | teste de exemplo | teste `standards/iso/iso4217.TestLookupsDoNotAllocate`<br>teste `standards/iso/iso3166.TestLookupsDoNotAllocate`<br>bench `standards/iso/iso4217.BenchmarkByAlpha` |
+| **normative-tables-match-extracts** | As tabelas compiladas das normas vêm dos extratos versionados. O sha256 do extrato vai no código gerado e um teste confere. | integrity | teste de exemplo | teste `standards/iso/iso4217.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso3166.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso639.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso18245.TestGeneratedTablesMatchExtract`<br>teste `standards/un/m49.TestGeneratedTablesMatchExtract` |
+| **gs1-prefix-is-not-origin** | O prefixo GS1 de um GTIN diz quem emitiu o número, não onde o produto foi feito. | integrity | testemunho | GS1 — GS1 Company Prefix |
 | **autoparts-restricted-by-design** | Autopeças só aceitam vendedor com credencial de desmonte e peça com código de rastreabilidade. Sistemas de segurança não existem na árvore. | regulatory | conjectura |  |
 | **backlog-drains** | Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento. | liveness | conjectura |  |
 | **cache-early-refresh** | Expiração antecipada probabilística evita estouro de recomputação no cache de reputação. | performance | conjectura |  |
@@ -231,13 +238,13 @@ flowchart LR
 | **Duração**<br>`duration` | Período nominal ou exato para janelas e validades. |  |  |  |
 | **Identificador de entidade**<br>`entity-id` | Identificador ordenado no tempo, amigo de índice B-tree. |  |  |  |
 | **MCC**<br>`mcc` | Código de categoria de comerciante que ancora a taxonomia curada. |  | iso-18245 |  |
-| **CPF**<br>`cpf` | Identificador fiscal de pessoa física com dois dígitos verificadores. |  |  |  |
-| **CNPJ**<br>`cnpj` | Identificador fiscal de pessoa jurídica, com base alfanumérica e dígitos verificadores numéricos. |  |  |  |
-| **GTIN**<br>`gtin` | Identificador de produto com dígito verificador. |  |  |  |
-| **ISBN**<br>`isbn` | Identificador de livro, nas formas de 10 e 13 dígitos. |  |  |  |
-| **VIN (chassi)**<br>`vin` | Identificador do veículo, usado para conferir compatibilidade e origem da peça. |  |  |  |
-| **RENAVAM**<br>`renavam` | Registro do veículo de origem de uma peça de desmonte. |  |  |  |
-| **CEP**<br>`postal-code` | Código postal que resolve a UF de origem e de destino para estimar prazo. |  |  |  |
+| **CPF**<br>`cpf` | Identificador fiscal de pessoa física com dois dígitos verificadores. |  | rfb-cpf |  |
+| **CNPJ**<br>`cnpj` | Identificador fiscal de pessoa jurídica, com base alfanumérica e dígitos verificadores numéricos. |  | rfb-cnpj |  |
+| **GTIN**<br>`gtin` | Identificador de produto com dígito verificador. |  | gs1-gtin |  |
+| **ISBN**<br>`isbn` | Identificador de livro, nas formas de 10 e 13 dígitos. |  | iso-2108 |  |
+| **VIN (chassi)**<br>`vin` | Identificador do veículo, usado para conferir compatibilidade e origem da peça. |  | iso-3779 |  |
+| **RENAVAM**<br>`renavam` | Registro do veículo de origem de uma peça de desmonte. |  | senatran-renavam |  |
+| **CEP**<br>`postal-code` | Código postal que resolve a UF de origem e de destino para estimar prazo. |  | correios-cep |  |
 | **UF**<br>`state` | Unidade federativa, com região geográfica. |  | ibge-uf |  |
 | **País**<br>`country` | País ou território, encadeado às regiões estatísticas. |  | iso-3166-1, un-m49 |  |
 | **Idioma**<br>`language` | Idioma de um item, como a língua de impressão de uma carta. |  | iso-639 |  |
@@ -298,11 +305,18 @@ Cadeia taxonômica: autoridade → norma → edição → tipo de artefato → p
 
 | autoridade | norma | tipo | edição | fundamentação | estrutura | pacote | ancora |
 |---|---|---|---|---|---|---|---|
+| Correios | **Correios CEP**<br>Código de Endereçamento Postal — faixas por unidade da federação | interval-map | tabela de faixas de CEP por UF | reconstructed | CEP como uint32; UF por tabela direta de 1000 bytes no prefixo de três dígitos | `standards/correios/cep` | postal-code |
+| GS1 | **GS1 GTIN**<br>Global Trade Item Number e GS1 Prefixes (GS1 General Specifications) | identifier | GS1 General Specifications vigentes; tabela de prefixos transcrita em 2026-10-14 | primary | soma ponderada 3/1 mod 10 em uma passada; prefixo por tabela direta de 1000 bytes | `standards/gs1/gtin` | gtin |
 | IBGE | **IBGE DTB — UF**<br>Divisão Territorial Brasileira: unidades da federação e grandes regiões (com ISO 3166-2:BR) | code-list | DTB vigente; códigos de UF estáveis desde a criação do Tocantins (1988) | reconstructed | tabelas de endereçamento direto (676 e 100 bytes); região derivada do primeiro dígito do código, sem tabela | `standards/ibge/uf` | state |
 | ISO | **ISO 18245**<br>Retail financial services — Merchant category codes | classification | ISO 18245:2023; códigos e descrições de fontes públicas secundárias | reconstructed | o código é o valor; rank sobre 10 000 posições (1,25 KB) para pertinência e descrição; grupo por tabela de 100 bytes (código/100) | `standards/iso/iso18245` | category, mcc |
+| ISO | **ISO 2108**<br>Information and documentation — International standard book number (ISBN) | identifier | ISO 2108:2017 | algorithmic | mod 11 com pesos 10..1 para o ISBN-10; ISBN-13 delega ao GTIN-13 (prefixos Bookland) | `standards/iso/iso2108` | isbn |
 | ISO | **ISO 3166-1**<br>Codes for the representation of names of countries and their subdivisions — Part 1: Country codes | code-list | ISO 3166-1:2020 com boletins da agência de manutenção, via datasets/country-codes | secondary | três dicionários de rank (alpha-2, alpha-3, numérico) com permutação para a ordem dos registros; árvore M49 acima | `standards/iso/iso3166` | country |
+| ISO | **ISO 3779 / ISO 3780**<br>Road vehicles — Vehicle identification number (VIN) and world manufacturer identifier (WMI) | identifier | ISO 3779:2009 e ISO 3780:2009; dígito verificador conforme 49 CFR 565 (EUA) | reconstructed | uma tabela de 256 bytes faz transliteração e validação de alfabeto; pesos fixos; ano-modelo por tabela | `standards/iso/iso3779` | vin |
 | ISO | **ISO 4217**<br>Codes for the representation of currencies | code-list | ISO 4217:2015, lista da agência de manutenção publicada em 2026-09-17 | secondary | handle de 2 bytes; rank sobre 26³ chaves (2,7 KB) para o alfa e sobre 1000 para o numérico; strings fatiadas de constantes | `standards/iso/iso4217` | money, currency |
 | ISO | **ISO 639-1/639-2**<br>Codes for the representation of names of languages | code-list | registro da Library of Congress (RA da ISO 639-2), via datasets/language-codes | secondary | rank sobre 26³ para o alfa-3 bibliográfico, rank + permutação para o terminológico e para o alfa-2 | `standards/iso/iso639` | language |
+| RFB | **RFB CNPJ**<br>Cadastro Nacional da Pessoa Jurídica — formato alfanumérico e dígitos verificadores | identifier | IN RFB nº 2.229/2024 (CNPJ alfanumérico a partir de julho de 2026) | algorithmic | valor do caractere = ASCII − 48; duas somas ponderadas mod 11 numa passada só | `standards/rfb/cnpj` | cnpj |
+| RFB | **RFB CPF**<br>Cadastro de Pessoas Físicas — dígitos verificadores | identifier | regra de cálculo publicada pela Receita Federal | algorithmic | duas somas ponderadas mod 11 numa passada só, sem alocação | `standards/rfb/cpf` | cpf |
+| SENATRAN | **SENATRAN RENAVAM**<br>Registro Nacional de Veículos Automotores — dígito verificador | identifier | regra em uso pelos DETRANs; sem texto normativo público | reconstructed | soma ponderada (3,2,9,8,7,6,5,4,3,2) mod 11 numa passada; números de 9 dígitos completados à esquerda | `standards/senatran/renavam` | renavam |
 | UN | **UN M49**<br>Standard country or area codes for statistical use | classification | revisão vigente na UNSD, via datasets/country-codes | secondary | árvore implícita com numeração de Euler (pre/post): contenção em duas comparações; rank sobre 1000 códigos | `standards/un/m49` | country |
 
 ## Paradigmas
@@ -316,19 +330,30 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | `internal/kb/source` | casca imperativa | não |
 | `internal/platform/buildinfo` | casca imperativa | não |
 | `standards` | núcleo funcional | sim |
+| `standards/correios/cep` | orientado a dados | sim |
+| `standards/gs1/gtin` | núcleo funcional | sim |
 | `standards/ibge/uf` | orientado a dados | sim |
 | `standards/internal/fold` | orientado a dados | sim |
 | `standards/internal/gen` | generativo | não |
+| `standards/internal/ident` | núcleo funcional | sim |
 | `standards/internal/succinct` | orientado a dados | sim |
 | `standards/iso/iso18245` | orientado a dados | sim |
+| `standards/iso/iso2108` | núcleo funcional | sim |
 | `standards/iso/iso3166` | orientado a dados | sim |
+| `standards/iso/iso3779` | núcleo funcional | sim |
 | `standards/iso/iso4217` | orientado a dados | sim |
 | `standards/iso/iso639` | orientado a dados | sim |
 | `standards/meta` | núcleo funcional | sim |
+| `standards/rfb/cnpj` | núcleo funcional | sim |
+| `standards/rfb/cpf` | núcleo funcional | sim |
+| `standards/senatran/renavam` | núcleo funcional | sim |
 | `standards/un/m49` | orientado a dados | sim |
 
 ## Achados do verificador
 
+- `warning` standard:correios-cep: fonte reconstruída: precisa de revisão de especialista
 - `warning` standard:ibge-uf: fonte reconstruída: precisa de revisão de especialista
 - `warning` standard:iso-18245: fonte reconstruída: precisa de revisão de especialista
+- `warning` standard:iso-3779: fonte reconstruída: precisa de revisão de especialista
+- `warning` standard:senatran-renavam: fonte reconstruída: precisa de revisão de especialista
 

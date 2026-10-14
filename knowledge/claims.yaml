@@ -130,6 +130,73 @@ claims:
     kind: integrity
     basis: conjecture
 
+  - id: check-digits-catch-single-substitutions
+    statement: GTIN, ISBN-10 e VIN detectam toda substituição de um caractere. No VIN, a exceção são letras com a mesma transliteração (A e J valem 1).
+    about: [gtin, isbn, vin]
+    kind: integrity
+    basis: proof-exhaustive
+    evidence:
+      - test: standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown
+      - test: standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition
+      - test: standards/iso/iso3779.TestEverySubstitutionChangesTheCheckOrCollidesInTransliteration
+
+  - id: gtin-misses-transpositions-by-five
+    statement: O dígito do GTIN não detecta troca de vizinhos que diferem em 5 (05 por 50). O ISBN-10 detecta toda troca de vizinhos.
+    about: [gtin, isbn]
+    kind: integrity
+    basis: proof-exhaustive
+    evidence:
+      - test: standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown
+      - test: standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition
+
+  - id: cpf-check-is-imperfect
+    statement: O CPF deixa passar cerca de 0,2% das substituições de um dígito, porque os restos 0 e 1 viram o mesmo dígito.
+    about: [cpf]
+    kind: integrity
+    basis: property-tested
+    evidence:
+      - test: standards/rfb/cpf.TestSingleSubstitutionDetectionRate
+
+  - id: cnpj-alphanumeric-extends-legacy
+    statement: A regra do CNPJ alfanumérico coincide com a regra numérica antiga em toda base só de dígitos.
+    about: [cnpj]
+    kind: integrity
+    basis: property-tested
+    evidence:
+      - test: standards/rfb/cnpj.TestAlphanumericRuleAgreesWithLegacyOnDigits
+
+  - id: gs1-prefix-is-not-origin
+    statement: O prefixo GS1 de um GTIN diz quem emitiu o número, não onde o produto foi feito.
+    about: [gtin]
+    kind: integrity
+    basis: testimony
+    review: done
+    evidence:
+      - source: GS1 — GS1 Company Prefix
+        url: https://www.gs1.org/standards/id-keys/company-prefix
+
+  - id: normative-tables-match-extracts
+    statement: As tabelas compiladas das normas vêm dos extratos versionados. O sha256 do extrato vai no código gerado e um teste confere.
+    about: [currency, country, language, mcc]
+    kind: integrity
+    basis: example-tested
+    evidence:
+      - test: standards/iso/iso4217.TestGeneratedTablesMatchExtract
+      - test: standards/iso/iso3166.TestGeneratedTablesMatchExtract
+      - test: standards/iso/iso639.TestGeneratedTablesMatchExtract
+      - test: standards/iso/iso18245.TestGeneratedTablesMatchExtract
+      - test: standards/un/m49.TestGeneratedTablesMatchExtract
+
+  - id: normative-lookups-allocation-free
+    statement: Consultas por código nas normas são O(1) e não alocam memória.
+    about: [currency, country]
+    kind: performance
+    basis: example-tested
+    evidence:
+      - test: standards/iso/iso4217.TestLookupsDoNotAllocate
+      - test: standards/iso/iso3166.TestLookupsDoNotAllocate
+      - bench: standards/iso/iso4217.BenchmarkByAlpha
+
   # --- mensageria -----------------------------------------------------------
   - id: outbox-atomic-with-state
     statement: Mudança de estado e evento são gravados na mesma transação. Não existe estado sem evento nem evento sem estado.
