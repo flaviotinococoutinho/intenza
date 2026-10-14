@@ -14,6 +14,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/flaviotinococoutinho/intenza/internal/platform/buildinfo"
 )
 
 // fake serves Toxiproxy, Prometheus and the admin/health endpoints. Each
@@ -253,5 +255,16 @@ func TestEveryExperimentFileParses(t *testing.T) {
 		if _, err := LoadExperiment(f); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+func TestEvidenceNamesTheCommitItCameFrom(t *testing.T) {
+	if buildinfo.Read().Commit != "" {
+		t.Skip("binary already stamped by the toolchain")
+	}
+	t.Setenv("INTENZA_COMMIT", "d4b494c")
+	t.Setenv("GITHUB_SHA", "merge-ref")
+	if got := evidenceCommit(); got != "d4b494c" {
+		t.Fatalf("commit %q: the PR head must win over GitHub's merge commit", got)
 	}
 }

@@ -115,8 +115,8 @@ func (r *Runner) Close(ctx context.Context) {
 // nothing and none refuted, held otherwise.
 func (r *Runner) Run(ctx context.Context, e Experiment) Journal {
 	j := Journal{Experiment: e, StartedAt: time.Now().UTC(), Verdict: "held", Environment: map[string]string{
-		"go": runtime.Version(), "os": runtime.GOOS + "/" + runtime.GOARCH, "commit": buildinfo.Read().Commit,
-		"ci": os.Getenv("CI"), "runner": os.Getenv("RUNNER_NAME"),
+		"go": runtime.Version(), "os": runtime.GOOS + "/" + runtime.GOARCH, "commit": evidenceCommit(),
+		"ci": os.Getenv("CI"), "runner": os.Getenv("RUNNER_NAME"), "run_id": os.Getenv("GITHUB_RUN_ID"),
 	}}
 	log := r.Env.Log.With("experiment", e.ID)
 	var broken, refuted, blind bool
@@ -227,6 +227,17 @@ func (r *Runner) Run(ctx context.Context, e Experiment) Journal {
 		judge("verify", p.Name, o, v, detail)
 	}
 	return finish()
+}
+
+// evidenceCommit names the code a journal is evidence about: the binary's
+// own stamp or, under `go run` in CI, the commit the workflow checked out.
+func evidenceCommit() string {
+	for _, c := range []string{buildinfo.Read().Commit, os.Getenv("INTENZA_COMMIT"), os.Getenv("GITHUB_SHA")} {
+		if c != "" {
+			return c
+		}
+	}
+	return ""
 }
 
 func outcomeOf(ok bool) outcome {

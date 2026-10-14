@@ -23,13 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # the PR head, not GitHub's temporary merge: the evidence must name a real commit
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: sobe a pilha
         run: make up
       - name: roda os experimentos
+        env:
+          INTENZA_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
         run: go run ./cmd/intenza-chaos run -out chaos/results chaos/experiments/*.yaml
       - name: estado da pilha
         if: always()
@@ -40,4 +45,7 @@ jobs:
         if: always()
         with:
           name: chaos-results
-          path: chaos/results
+          path: |
+            chaos/results/*.json
+            chaos/results/*.md
+            chaos/results/services.log
