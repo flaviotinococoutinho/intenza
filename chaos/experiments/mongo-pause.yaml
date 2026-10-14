@@ -1,0 +1,23 @@
+id: mongo-pause
+title: Banco congelado por 15 segundos
+risk: database-outage
+claims: [mongo-outage-fails-fast]
+hypothesis: Com o banco congelado por 15 s, a API responde em menos de 2,5 s mesmo quando falha (503 em vez de pendurar) e volta sozinha quando o banco volta.
+cause: O container do MongoDB é pausado.
+mechanism: Toda operação tem prazo no cliente (CSOT de 2 s); estourou, a API devolve 503 com Retry-After.
+effect: Erros rápidos durante a pausa, recuperação sem intervenção.
+load: {rate: 0.5, sellers: 6, propose_p: 0.6, window: PT12S, snipe: 3s, duration: 60s, seed: 16}
+steady_state:
+  - {name: api pronta, http: {url: "http://localhost:9091/readyz", status: 200}}
+method:
+  - wait: 15s
+  - docker: {service: mongo, action: pause}
+  - wait: 15s
+  - docker: {service: mongo, action: unpause}
+rollback:
+  - docker: {service: mongo, action: unpause}
+settle: 20s
+verify:
+  - {name: p99 de publicação abaixo de 2,5 s, load: {op: publish, stat: p99}, max: 2.5}
+  - {name: p99 de leitura abaixo de 2,5 s, load: {op: poll, stat: p99}, max: 2.5}
+  - {name: api pronta de novo, http: {url: "http://localhost:9091/readyz", status: 200}}

@@ -1,0 +1,24 @@
+id: psp-webhook-loss
+title: Webhooks do agente perdidos e depois duplicados
+risk: webhook-loss
+claims: [reconciliation-converges, webhook-handling-idempotent]
+hypothesis: Com todos os webhooks perdidos por 60 s e depois duplicados, a reconciliação leva todo acordo ao estado do agente em até 2 minutos e nenhum termina preso esperando.
+cause: O simulador descarta e depois duplica todo webhook.
+mechanism: Sem confirmação, os acordos ficam esperando; a reconciliação pergunta ao agente a cada 10 s e aplica o que ele diz; duplicatas caem na idempotência da máquina de estados.
+effect: Liquidação atrasa enquanto os webhooks somem e converge pela reconciliação.
+load: {rate: 0.4, sellers: 6, propose_p: 0.6, window: PT12S, snipe: 3s, duration: 90s, settlement: true, seed: 14}
+steady_state:
+  - {name: api viva, http: {url: "http://localhost:8080/healthz", status: 204}}
+method:
+  - fault: {service: psp, set: {auto_pay_after: 2s, webhook_drop: "1"}}
+  - wait: 60s
+  - fault: {service: psp, set: {webhook_drop: "0", webhook_dup: "1"}}
+  - wait: 20s
+rollback:
+  - fault: {service: psp, set: {auto_pay_after: 0s, webhook_drop: "0", webhook_dup: "0"}}
+settle: 120s
+verify:
+  - name: nenhum acordo preso esperando o agente
+    mongo: {collection: agreements, filter: '{"status": {"$in": ["awaiting-funding", "releasing", "refunding"]}, "escrow_id": {"$ne": ""}}'}
+    max: 0
+  - {name: liberações aconteceram, load: {op: released, stat: count}, min: 1}

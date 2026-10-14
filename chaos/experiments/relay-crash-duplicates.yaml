@@ -1,0 +1,28 @@
+id: relay-crash-duplicates
+title: Relay cai entre publicar e marcar
+risk: duplicate-processing
+claims: [consumers-effectively-once]
+hypothesis: Quando o relay cai depois de publicar e antes de marcar o outbox, os eventos saem de novo e mesmo assim nenhum vendedor recebe a mesma notificação duas vezes.
+cause: Falha injetada que encerra o relay logo depois do ack do broker.
+mechanism: Ao voltar, o relay republica o que não foi marcado, com os mesmos ids; o consumidor de fan-out aplica cada evento uma vez pelo inbox.
+effect: Duplicatas no Kafka, nenhuma no efeito.
+load: {rate: 0.5, sellers: 6, propose_p: 0.5, window: PT12S, snipe: 3s, duration: 60s, seed: 15}
+steady_state:
+  - {name: relay vivo, http: {url: "http://localhost:9092/healthz", status: 204}}
+method:
+  - wait: 15s
+  - fault: {service: relay, set: {crash_after_publish: "true"}}
+  - wait: 30s
+rollback: []
+settle: 30s
+verify:
+  - {name: relay voltou, http: {url: "http://localhost:9092/healthz", status: 204}}
+  - name: notificações em dobro
+    mongo:
+      collection: notifications
+      pipeline: '[{"$group": {"_id": {"i": "$intent_id", "p": "$party_id"}, "n": {"$sum": 1}}}, {"$match": {"n": {"$gt": 1}}}, {"$count": "n"}]'
+    max: 0
+  - name: duplicatas chegaram e foram absorvidas
+    promql: {query: 'sum(increase(intenza_business_events_total{fact="inbox.duplicate"}[5m]))'}
+    min: 1
+  - {name: nada preso no outbox, mongo: {collection: outbox, filter: '{"published": false}'}, max: 0}
