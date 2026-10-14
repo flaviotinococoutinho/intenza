@@ -6,7 +6,7 @@ x-intenza: &intenza
   image: intenza:local
   build:
     context: ..
-    dockerfile: deploy/Dockerfile.local
+    dockerfile: deploy/Dockerfile.host
   restart: unless-stopped
   depends_on:
     mongo: {condition: service_healthy}
