@@ -1,3 +1,5 @@
+//intenza:paradigm imperative-shell
+
 // Package buildinfo exposes the identity of the running binary.
 //
 // Version and Commit can be pinned at link time:
