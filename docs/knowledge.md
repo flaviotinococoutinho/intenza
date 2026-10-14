@@ -199,7 +199,7 @@ flowchart LR
 
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
-| **Categoria**<br>`category` | Tipo de alta ordem, suas instâncias são tipos de item (carta TCG, tênis, porta dianteira). Ancora no MCC e define as qualidades que o item carrega. | classifica item<br>parte de niche |  |  |
+| **Categoria**<br>`category` | Tipo de alta ordem, suas instâncias são tipos de item (carta TCG, tênis, porta dianteira). Ancora no MCC e define as qualidades que o item carrega. | classifica item<br>parte de niche | iso-18245 |  |
 
 ### collective — coletivo de membros uniformes
 
@@ -227,10 +227,10 @@ flowchart LR
 
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
-| **Dinheiro**<br>`money` | Quantia em unidades menores de uma moeda. |  |  |  |
+| **Dinheiro**<br>`money` | Quantia em unidades menores de uma moeda. |  | iso-4217 |  |
 | **Duração**<br>`duration` | Período nominal ou exato para janelas e validades. |  |  |  |
 | **Identificador de entidade**<br>`entity-id` | Identificador ordenado no tempo, amigo de índice B-tree. |  |  |  |
-| **MCC**<br>`mcc` | Código de categoria de comerciante que ancora a taxonomia curada. |  |  |  |
+| **MCC**<br>`mcc` | Código de categoria de comerciante que ancora a taxonomia curada. |  | iso-18245 |  |
 | **CPF**<br>`cpf` | Identificador fiscal de pessoa física com dois dígitos verificadores. |  |  |  |
 | **CNPJ**<br>`cnpj` | Identificador fiscal de pessoa jurídica, com base alfanumérica e dígitos verificadores numéricos. |  |  |  |
 | **GTIN**<br>`gtin` | Identificador de produto com dígito verificador. |  |  |  |
@@ -238,10 +238,10 @@ flowchart LR
 | **VIN (chassi)**<br>`vin` | Identificador do veículo, usado para conferir compatibilidade e origem da peça. |  |  |  |
 | **RENAVAM**<br>`renavam` | Registro do veículo de origem de uma peça de desmonte. |  |  |  |
 | **CEP**<br>`postal-code` | Código postal que resolve a UF de origem e de destino para estimar prazo. |  |  |  |
-| **UF**<br>`state` | Unidade federativa, com região geográfica. |  |  |  |
-| **País**<br>`country` | País ou território, encadeado às regiões estatísticas. |  |  |  |
-| **Idioma**<br>`language` | Idioma de um item, como a língua de impressão de uma carta. |  |  |  |
-| **Moeda**<br>`currency` | Moeda com código alfabético, numérico e unidades menores. |  |  |  |
+| **UF**<br>`state` | Unidade federativa, com região geográfica. |  | ibge-uf |  |
+| **País**<br>`country` | País ou território, encadeado às regiões estatísticas. |  | iso-3166-1, un-m49 |  |
+| **Idioma**<br>`language` | Idioma de um item, como a língua de impressão de uma carta. |  | iso-639 |  |
+| **Moeda**<br>`currency` | Moeda com código alfabético, numérico e unidades menores. |  | iso-4217 |  |
 | **Código de pagamento**<br>`payment-code` | Payload copia e cola com as instruções de pagamento do escrow. |  |  |  |
 
 ### phase — fase anti-rígida do ciclo de vida
@@ -292,6 +292,19 @@ flowchart LR
 | **Intenção expirada**<br>`selection-timed-out` | O prazo de seleção vence sem escolha. | participantes intent |  |  |
 | **Intenção cancelada**<br>`intent-withdrawn` | O comprador retira a intenção. | participantes buyer |  |  |
 
+## Normas
+
+Cadeia taxonômica: autoridade → norma → edição → tipo de artefato → pacote → conceitos que se apoiam nela. A fundamentação mostrada é a do elo mais fraco entre as fontes: primária, secundária, reconstruída ou algorítmica.
+
+| autoridade | norma | tipo | edição | fundamentação | estrutura | pacote | ancora |
+|---|---|---|---|---|---|---|---|
+| IBGE | **IBGE DTB — UF**<br>Divisão Territorial Brasileira: unidades da federação e grandes regiões (com ISO 3166-2:BR) | code-list | DTB vigente; códigos de UF estáveis desde a criação do Tocantins (1988) | reconstructed | tabelas de endereçamento direto (676 e 100 bytes); região derivada do primeiro dígito do código, sem tabela | `standards/ibge/uf` | state |
+| ISO | **ISO 18245**<br>Retail financial services — Merchant category codes | classification | ISO 18245:2023; códigos e descrições de fontes públicas secundárias | reconstructed | o código é o valor; rank sobre 10 000 posições (1,25 KB) para pertinência e descrição; grupo por tabela de 100 bytes (código/100) | `standards/iso/iso18245` | category, mcc |
+| ISO | **ISO 3166-1**<br>Codes for the representation of names of countries and their subdivisions — Part 1: Country codes | code-list | ISO 3166-1:2020 com boletins da agência de manutenção, via datasets/country-codes | secondary | três dicionários de rank (alpha-2, alpha-3, numérico) com permutação para a ordem dos registros; árvore M49 acima | `standards/iso/iso3166` | country |
+| ISO | **ISO 4217**<br>Codes for the representation of currencies | code-list | ISO 4217:2015, lista da agência de manutenção publicada em 2026-09-17 | secondary | handle de 2 bytes; rank sobre 26³ chaves (2,7 KB) para o alfa e sobre 1000 para o numérico; strings fatiadas de constantes | `standards/iso/iso4217` | money, currency |
+| ISO | **ISO 639-1/639-2**<br>Codes for the representation of names of languages | code-list | registro da Library of Congress (RA da ISO 639-2), via datasets/language-codes | secondary | rank sobre 26³ para o alfa-3 bibliográfico, rank + permutação para o terminológico e para o alfa-2 | `standards/iso/iso639` | language |
+| UN | **UN M49**<br>Standard country or area codes for statistical use | classification | revisão vigente na UNSD, via datasets/country-codes | secondary | árvore implícita com numeração de Euler (pre/post): contenção em duas comparações; rank sobre 1000 códigos | `standards/un/m49` | country |
+
 ## Paradigmas
 
 Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (núcleo funcional, autômatos, orientado a dados, probabilístico) não fazem I/O, não leem o relógio e não sorteiam sem uma fonte injetada; o verificador confere imports e referências.
@@ -302,4 +315,20 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | `internal/kb` | núcleo funcional | sim |
 | `internal/kb/source` | casca imperativa | não |
 | `internal/platform/buildinfo` | casca imperativa | não |
+| `standards` | núcleo funcional | sim |
+| `standards/ibge/uf` | orientado a dados | sim |
+| `standards/internal/fold` | orientado a dados | sim |
+| `standards/internal/gen` | generativo | não |
+| `standards/internal/succinct` | orientado a dados | sim |
+| `standards/iso/iso18245` | orientado a dados | sim |
+| `standards/iso/iso3166` | orientado a dados | sim |
+| `standards/iso/iso4217` | orientado a dados | sim |
+| `standards/iso/iso639` | orientado a dados | sim |
+| `standards/meta` | núcleo funcional | sim |
+| `standards/un/m49` | orientado a dados | sim |
+
+## Achados do verificador
+
+- `warning` standard:ibge-uf: fonte reconstruída: precisa de revisão de especialista
+- `warning` standard:iso-18245: fonte reconstruída: precisa de revisão de especialista
 

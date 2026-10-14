@@ -24,6 +24,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/flaviotinococoutinho/intenza/internal/kb"
+	"github.com/flaviotinococoutinho/intenza/standards"
 )
 
 const paradigmDirective = "//intenza:paradigm "
@@ -267,8 +268,20 @@ func LoadExperiments(root string) (map[string]bool, map[string]kb.Result, error)
 	return exps, results, nil
 }
 
+// Standards flattens the registry of the standards module.
+func Standards() []kb.Standard {
+	var out []kb.Standard
+	for _, s := range standards.All() {
+		out = append(out, kb.Standard{
+			ID: s.ID, Code: s.Code, Title: s.Title, Authority: string(s.Authority), Kind: string(s.Kind),
+			Edition: s.Edition, Package: s.Package, Structure: s.Structure, Grounding: string(s.Weakest()),
+		})
+	}
+	return out
+}
+
 // Gather builds the complete Facts for a repository root.
-func Gather(root string, standards map[string]bool) (kb.Facts, error) {
+func Gather(root string, stds []kb.Standard) (kb.Facts, error) {
 	symbols, tests, pkgs, err := ScanCode(root)
 	if err != nil {
 		return kb.Facts{}, err
@@ -279,6 +292,6 @@ func Gather(root string, standards map[string]bool) (kb.Facts, error) {
 	}
 	return kb.Facts{
 		Symbols: symbols, Tests: tests, Packages: pkgs,
-		Experiments: exps, Results: results, Standards: standards,
+		Experiments: exps, Results: results, Standards: stds,
 	}, nil
 }

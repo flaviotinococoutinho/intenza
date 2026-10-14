@@ -19,3 +19,7 @@ coverage.*
 
 # artefatos de caos que não entram no histórico
 /chaos/tmp/
+
+# workspace local (os módulos já se ligam por replace)
+go.work
+go.work.sum

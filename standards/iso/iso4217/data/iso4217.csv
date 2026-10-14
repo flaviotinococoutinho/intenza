@@ -1,0 +1,183 @@
+# ISO 4217 — lista publicada pela SIX Financial Information (agência de manutenção) em 2026-09-17
+# upstream iso4217-list-one.xml sha256=33139b438657d1cee116ba737807ea71d19d6de4b90f799a09c56f0cc6a1b0ff
+# nomes pt: Unicode CLDR common/main/pt.xml sha256=f5511280d86e4382116882525ae0c88c906dd6fe0cbc892122f768f2fafd46ec (Unicode-3.0)
+# extraído em 2026-10-14
+alpha,numeric,minor,fund,entities,name_en,name_pt
+AED,784,2,false,1,UAE Dirham,Dirham dos Emirados Árabes Unidos
+AFN,971,2,false,1,Afghani,Afegane afegão
+ALL,008,2,false,1,Lek,Lek albanês
+AMD,051,2,false,1,Armenian Dram,Dram armênio
+AOA,973,2,false,1,Kwanza,Kwanza angolano
+ARS,032,2,false,1,Argentine Peso,Peso argentino
+AUD,036,2,false,8,Australian Dollar,Dólar australiano
+AWG,533,2,false,1,Aruban Florin,Florim arubano
+AZN,944,2,false,1,Azerbaijan Manat,Manat azeri
+BAM,977,2,false,1,Convertible Mark,Marco conversível da Bósnia e Herzegovina
+BBD,052,2,false,1,Barbados Dollar,Dólar barbadense
+BDT,050,2,false,1,Taka,Taka bengali
+BHD,048,3,false,1,Bahraini Dinar,Dinar bareinita
+BIF,108,0,false,1,Burundi Franc,Franco burundiano
+BMD,060,2,false,1,Bermudian Dollar,Dólar bermudense
+BND,096,2,false,1,Brunei Dollar,Dólar bruneano
+BOB,068,2,false,1,Boliviano,Boliviano da Bolívia
+BOV,984,2,true,1,Mvdol,Mvdol boliviano
+BRL,986,2,false,1,Brazilian Real,Real brasileiro
+BSD,044,2,false,1,Bahamian Dollar,Dólar bahamense
+BTN,064,2,false,1,Ngultrum,Ngultrum butanês
+BWP,072,2,false,1,Pula,Pula botsuanesa
+BYN,933,2,false,1,Belarusian Ruble,Rublo bielorrusso
+BZD,084,2,false,1,Belize Dollar,Dólar belizenho
+CAD,124,2,false,1,Canadian Dollar,Dólar canadense
+CDF,976,2,false,1,Congolese Franc,Franco congolês
+CHE,947,2,true,1,WIR Euro,Euro WIR
+CHF,756,2,false,2,Swiss Franc,Franco suíço
+CHW,948,2,true,1,WIR Franc,Franco WIR
+CLF,990,4,true,1,Unidad de Fomento,Unidades de Fomento chilenas
+CLP,152,0,false,1,Chilean Peso,Peso chileno
+CNY,156,2,false,1,Yuan Renminbi,Yuan chinês
+COP,170,2,false,1,Colombian Peso,Peso colombiano
+COU,970,2,true,1,Unidad de Valor Real,Unidade de Valor Real
+CRC,188,2,false,1,Costa Rican Colon,Colón costarriquenho
+CUP,192,2,false,1,Cuban Peso,Peso cubano
+CVE,132,2,false,1,Cabo Verde Escudo,Escudo cabo-verdiano
+CZK,203,2,false,1,Czech Koruna,Coroa tcheca
+DJF,262,0,false,1,Djibouti Franc,Franco djiboutiano
+DKK,208,2,false,3,Danish Krone,Coroa dinamarquesa
+DOP,214,2,false,1,Dominican Peso,Peso dominicano
+DZD,012,2,false,1,Algerian Dinar,Dinar argelino
+EGP,818,2,false,1,Egyptian Pound,Libra egípcia
+ERN,232,2,false,1,Nakfa,Nakfa da Eritreia
+ETB,230,2,false,1,Ethiopian Birr,Birr etíope
+EUR,978,2,false,37,Euro,Euro
+FJD,242,2,false,1,Fiji Dollar,Dólar fijiano
+FKP,238,2,false,1,Falkland Islands Pound,Libra malvinense
+GBP,826,2,false,4,Pound Sterling,Libra esterlina
+GEL,981,2,false,1,Lari,Lari georgiano
+GHS,936,2,false,1,Ghana Cedi,Cedi ganês
+GIP,292,2,false,1,Gibraltar Pound,Libra de Gibraltar
+GMD,270,2,false,1,Dalasi,Dalasi gambiano
+GNF,324,0,false,1,Guinean Franc,Franco guineano
+GTQ,320,2,false,1,Quetzal,Quetzal guatemalteco
+GYD,328,2,false,1,Guyana Dollar,Dólar guianense
+HKD,344,2,false,1,Hong Kong Dollar,Dólar de Hong Kong
+HNL,340,2,false,1,Lempira,Lempira hondurenha
+HTG,332,2,false,1,Gourde,Gourde haitiano
+HUF,348,2,false,1,Forint,Florim húngaro
+IDR,360,2,false,1,Rupiah,Rupia indonésia
+ILS,376,2,false,1,New Israeli Sheqel,Novo shekel israelense
+INR,356,2,false,2,Indian Rupee,Rupia indiana
+IQD,368,3,false,1,Iraqi Dinar,Dinar iraquiano
+IRR,364,2,false,1,Iranian Rial,Rial iraniano
+ISK,352,0,false,1,Iceland Krona,Coroa islandesa
+JMD,388,2,false,1,Jamaican Dollar,Dólar jamaicano
+JOD,400,3,false,1,Jordanian Dinar,Dinar jordaniano
+JPY,392,0,false,1,Yen,Iene japonês
+KES,404,2,false,1,Kenyan Shilling,Xelim queniano
+KGS,417,2,false,1,Som,Som quirguiz
+KHR,116,2,false,1,Riel,Riel cambojano
+KMF,174,0,false,1,Comorian Franc,Franco comoriano
+KPW,408,2,false,1,North Korean Won,Won norte-coreano
+KRW,410,0,false,1,Won,Won sul-coreano
+KWD,414,3,false,1,Kuwaiti Dinar,Dinar kuwaitiano
+KYD,136,2,false,1,Cayman Islands Dollar,Dólar das Ilhas Cayman
+KZT,398,2,false,1,Tenge,Tenge cazaque
+LAK,418,2,false,1,Lao Kip,Kip laosiano
+LBP,422,2,false,1,Lebanese Pound,Libra libanesa
+LKR,144,2,false,1,Sri Lanka Rupee,Rupia cingalesa
+LRD,430,2,false,1,Liberian Dollar,Dólar liberiano
+LSL,426,2,false,1,Loti,Loti lesotiano
+LYD,434,3,false,1,Libyan Dinar,Dinar líbio
+MAD,504,2,false,2,Moroccan Dirham,Dirham marroquino
+MDL,498,2,false,1,Moldovan Leu,Leu moldávio
+MGA,969,2,false,1,Malagasy Ariary,Ariary malgaxe
+MKD,807,2,false,1,Denar,Dinar macedônio
+MMK,104,2,false,1,Kyat,Quiate mianmarense
+MNT,496,2,false,1,Tugrik,Tugrik mongol
+MOP,446,2,false,1,Pataca,Pataca macaense
+MRU,929,2,false,1,Ouguiya,Ouguiya mauritana
+MUR,480,2,false,1,Mauritius Rupee,Rupia mauriciana
+MVR,462,2,false,1,Rufiyaa,Rupia maldivana
+MWK,454,2,false,1,Malawi Kwacha,Kwacha malauiana
+MXN,484,2,false,1,Mexican Peso,Peso mexicano
+MXV,979,2,true,1,Mexican Unidad de Inversion (UDI),Unidade Mexicana de Investimento (UDI)
+MYR,458,2,false,1,Malaysian Ringgit,Ringgit malaio
+MZN,943,2,false,1,Mozambique Metical,Metical moçambicano
+NAD,516,2,false,1,Namibia Dollar,Dólar namibiano
+NGN,566,2,false,1,Naira,Naira nigeriana
+NIO,558,2,false,1,Cordoba Oro,Córdoba nicaraguense
+NOK,578,2,false,3,Norwegian Krone,Coroa norueguesa
+NPR,524,2,false,1,Nepalese Rupee,Rupia nepalesa
+NZD,554,2,false,5,New Zealand Dollar,Dólar neozelandês
+OMR,512,3,false,1,Rial Omani,Rial omanense
+PAB,590,2,false,1,Balboa,Balboa panamenho
+PEN,604,2,false,1,Sol,Novo sol peruano
+PGK,598,2,false,1,Kina,Kina papuásia
+PHP,608,2,false,1,Philippine Peso,Peso filipino
+PKR,586,2,false,1,Pakistan Rupee,Rupia paquistanesa
+PLN,985,2,false,1,Zloty,Zloty polonês
+PYG,600,0,false,1,Guarani,Guarani paraguaio
+QAR,634,2,false,1,Qatari Rial,Rial catariano
+RON,946,2,false,1,Romanian Leu,Leu romeno
+RSD,941,2,false,1,Serbian Dinar,Dinar sérvio
+RUB,643,2,false,1,Russian Ruble,Rublo russo
+RWF,646,0,false,1,Rwanda Franc,Franco ruandês
+SAR,682,2,false,1,Saudi Riyal,Riyal saudita
+SBD,090,2,false,1,Solomon Islands Dollar,Dólar das Ilhas Salomão
+SCR,690,2,false,1,Seychelles Rupee,Rupia seichelense
+SDG,938,2,false,1,Sudanese Pound,Libra sudanesa
+SEK,752,2,false,1,Swedish Krona,Coroa sueca
+SGD,702,2,false,1,Singapore Dollar,Dólar singapuriano
+SHP,654,2,false,1,Saint Helena Pound,Libra de Santa Helena
+SLE,925,2,false,1,Leone,Leone de Serra Leoa
+SOS,706,2,false,1,Somali Shilling,Xelim somali
+SRD,968,2,false,1,Surinam Dollar,Dólar surinamês
+SSP,728,2,false,1,South Sudanese Pound,Libra sul-sudanesa
+STN,930,2,false,1,Dobra,Dobra de São Tomé e Príncipe
+SVC,222,2,false,1,El Salvador Colon,Colom salvadorenho
+SYP,760,2,false,1,Syrian Pound,Libra síria
+SZL,748,2,false,1,Lilangeni,Lilangeni suazi
+THB,764,2,false,1,Baht,Baht tailandês
+TJS,972,2,false,1,Somoni,Somoni tadjique
+TMT,934,2,false,1,Turkmenistan New Manat,Manat turcomeno
+TND,788,3,false,1,Tunisian Dinar,Dinar tunisiano
+TOP,776,2,false,1,Pa’anga,Paʻanga tonganesa
+TRY,949,2,false,1,Turkish Lira,Lira turca
+TTD,780,2,false,1,Trinidad and Tobago Dollar,Dólar de Trinidad e Tobago
+TWD,901,2,false,1,New Taiwan Dollar,Novo dólar taiwanês
+TZS,834,2,false,1,Tanzanian Shilling,Xelim tanzaniano
+UAH,980,2,false,1,Hryvnia,Hryvnia ucraniano
+UGX,800,0,false,1,Uganda Shilling,Xelim ugandense
+USD,840,2,false,19,US Dollar,Dólar americano
+USN,997,2,true,1,US Dollar (Next day),Dólar norte-americano (Dia seguinte)
+UYI,940,0,true,1,Uruguay Peso en Unidades Indexadas (UI),Peso uruguaio en unidades indexadas
+UYU,858,2,false,1,Peso Uruguayo,Peso uruguaio
+UYW,927,4,true,1,Unidad Previsional,Unidad Previsional
+UZS,860,2,false,1,Uzbekistan Sum,Som uzbeque
+VED,926,2,false,1,Bolívar Soberano,Bolívar Soberano
+VES,928,2,false,1,Bolívar Soberano,Bolívar venezuelano
+VND,704,0,false,1,Dong,Dong vietnamita
+VUV,548,0,false,1,Vatu,Vatu de Vanuatu
+WST,882,2,false,1,Tala,Tala samoano
+XAD,396,2,true,1,Arab Accounting Dinar,Arab Accounting Dinar
+XAF,950,0,false,6,CFA Franc BEAC,Franco CFA de BEAC
+XAG,961,-1,false,1,Silver,Prata
+XAU,959,-1,false,1,Gold,Ouro
+XBA,955,-1,false,1,Bond Markets Unit European Composite Unit (EURCO),Unidade Composta Europeia
+XBB,956,-1,false,1,Bond Markets Unit European Monetary Unit (E.M.U.-6),Unidade Monetária Europeia
+XBC,957,-1,false,1,Bond Markets Unit European Unit of Account 9 (E.U.A.-9),Unidade de Conta Europeia (XBC)
+XBD,958,-1,false,1,Bond Markets Unit European Unit of Account 17 (E.U.A.-17),Unidade de Conta Europeia (XBD)
+XCD,951,2,false,8,East Caribbean Dollar,Dólar do Caribe Oriental
+XCG,532,2,false,2,Caribbean Guilder,Florim do Caribe
+XDR,960,-1,false,1,SDR (Special Drawing Right),Direitos Especiais de Giro
+XOF,952,0,false,8,CFA Franc BCEAO,Franco CFA de BCEAO
+XPD,964,-1,false,1,Palladium,Paládio
+XPF,953,0,false,3,CFP Franc,Franco CFP
+XPT,962,-1,false,1,Platinum,Platina
+XSU,994,-1,false,1,Sucre,Sucre
+XTS,963,-1,false,1,Codes specifically reserved for testing purposes,Código de Moeda de Teste
+XUA,965,-1,false,1,ADB Unit of Account,ADB Unit of Account
+XXX,999,-1,false,1,The codes assigned for transactions where no currency is involved,Moeda desconhecida
+YER,886,2,false,1,Yemeni Rial,Rial iemenita
+ZAR,710,2,false,3,Rand,Rand sul-africano
+ZMW,967,2,false,1,Zambian Kwacha,Kwacha zambiano
+ZWG,924,2,false,1,Zimbabwe Gold,Ouro zimbabueano

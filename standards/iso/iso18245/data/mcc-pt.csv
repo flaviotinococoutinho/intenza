@@ -1,0 +1,45 @@
+# Traduções curadas para o português (Brasil) dos MCCs que a taxonomia do Intenza usa ou bloqueia.
+# Fonte: tradução livre das descrições em data/mcc.csv; não é texto normativo.
+code,name_pt
+4829,Ordens de pagamento e transferências
+5122,Medicamentos e artigos de drogaria (atacado)
+5309,Lojas francas (duty free)
+5531,Lojas de suprimentos automotivos
+5532,Lojas de pneus
+5533,Lojas de peças e acessórios automotivos
+5571,Concessionárias de motocicletas
+5651,Lojas de roupas para a família
+5661,Lojas de calçados
+5681,Peleterias
+5699,Lojas de vestuário e acessórios diversos
+5733,Lojas de música e instrumentos musicais
+5735,Lojas de discos
+5912,Drogarias e farmácias
+5921,Lojas de bebidas alcoólicas
+5931,Lojas de artigos usados e brechós
+5932,Antiquários
+5933,Casas de penhor e ferros-velhos
+5935,Desmontes e ferros-velhos de veículos
+5937,Reproduções de antiguidades
+5941,Lojas de artigos esportivos
+5942,Livrarias
+5944,"Relojoarias, joalherias e pratarias"
+5945,"Lojas de hobbies, brinquedos e jogos"
+5946,Lojas de câmeras e artigos fotográficos
+5947,"Lojas de cartões, presentes e souvenirs"
+5948,Lojas de artigos de couro
+5967,Marketing direto (televendas receptivas)
+5970,Lojas de materiais artísticos e artesanato
+5971,Galerias e marchands de arte
+5972,Lojas de selos e moedas (filatelia e numismática)
+5973,Lojas de artigos religiosos
+5976,Artigos ortopédicos e próteses
+5993,Tabacarias
+5994,Bancas de jornal
+5995,"Pet shops, rações e artigos para animais"
+5999,Varejo diverso e especializado
+6051,"Instituições não financeiras: câmbio, ordens de pagamento e cheques de viagem"
+6211,Corretoras de valores
+7273,Serviços de encontros e acompanhantes
+7297,Casas de massagem
+7995,"Apostas (loterias, fichas de cassino e turfe)"
