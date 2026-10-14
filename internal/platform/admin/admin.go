@@ -100,3 +100,18 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
 }
+
+// Serve runs an HTTP server until ctx ends, then shuts it down gracefully.
+func Serve(ctx context.Context, addr string, h http.Handler) error {
+	srv := &http.Server{Addr: addr, Handler: h, ReadHeaderTimeout: 5 * time.Second}
+	errs := make(chan error, 1)
+	go func() { errs <- srv.ListenAndServe() }()
+	select {
+	case err := <-errs:
+		return err
+	case <-ctx.Done():
+		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(shutdown)
+	}
+}

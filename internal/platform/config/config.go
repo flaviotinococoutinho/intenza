@@ -43,6 +43,13 @@ type Config struct {
 	ActiveWave      int    `env:"INTENZA_ACTIVE_WAVE" envDefault:"1"`
 	RatingDays      int    `env:"INTENZA_RATING_DAYS" envDefault:"14"`
 
+	WorkerRoles   []string      `env:"INTENZA_WORKER_ROLES" envDefault:"deadlines,settlement,reconcile,fanout" envSeparator:","`
+	FanoutK       int           `env:"INTENZA_FANOUT_K" envDefault:"5"`
+	FanoutSeed    uint64        `env:"INTENZA_FANOUT_SEED" envDefault:"1"`
+	EscrowTimeout time.Duration `env:"INTENZA_ESCROW_TIMEOUT" envDefault:"1500ms"`
+	PSPSeed       uint64        `env:"INTENZA_PSP_SEED" envDefault:"7"`
+	WebhookURL    string        `env:"INTENZA_WEBHOOK_URL" envDefault:"http://localhost:8080/v1/webhooks/escrow"`
+
 	OTLPEndpoint string `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 }
 
