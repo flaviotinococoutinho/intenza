@@ -1,0 +1,43 @@
+name: chaos
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # toda segunda: o caos roda numa máquina limpa
+  pull_request:
+    paths:
+      - chaos/experiments/**
+      - internal/chaos/**
+      - deploy/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chaos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  experiments:
+    name: experimentos de caos
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: sobe a pilha
+        run: make up
+      - name: roda os experimentos
+        run: go run ./cmd/intenza-chaos run -out chaos/results chaos/experiments/*.yaml
+      - name: estado da pilha
+        if: always()
+        run: |
+          docker compose -f deploy/compose.yaml ps
+          docker compose -f deploy/compose.yaml logs --tail=300 api relay worker psp > chaos/results/services.log 2>&1 || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: chaos-results
+          path: chaos/results

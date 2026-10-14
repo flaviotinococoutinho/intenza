@@ -10,7 +10,7 @@ GOLANGCI := $(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(G
 GOVULNCHECK := $(GO) run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 .DEFAULT_GOAL := help
-.PHONY: help tidy fmt lint test test-race test-integration cover bench vuln generate generate-check check kb linux-binaries up up-obs down ps logs
+.PHONY: help tidy fmt lint test test-race test-integration cover bench vuln generate generate-check check kb linux-binaries up up-obs down ps logs chaos load
 
 help: ## lista os alvos
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -75,3 +75,9 @@ ps: ## estado dos containers
 
 logs: ## logs dos serviços do intenza
 	$(COMPOSE) logs -f api relay worker psp
+
+chaos: ## roda todos os experimentos de caos contra a pilha (make up antes)
+	$(GO) run ./cmd/intenza-chaos run -out chaos/results chaos/experiments/*.yaml
+
+load: ## carga estocástica por 60 s contra a pilha
+	$(GO) run ./cmd/intenza-chaos load -rate 1 -duration 60s -settlement
