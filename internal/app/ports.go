@@ -1,0 +1,115 @@
+//intenza:paradigm imperative-shell
+
+// Package app holds the use cases. Each one opens a transaction, loads
+// aggregates, asks the functional core what should happen, saves the new
+// state together with the events it produced (transactional outbox) and only
+// then does the best-effort side effects, such as scheduling deadlines.
+//
+// Two clocks exist on purpose. The local Clock is for display; the store's
+// Now is the database clock, the only authority for deadlines that unlock
+// sealed prices or refuse late proposals.
+package app
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/flaviotinococoutinho/intenza/internal/domain/agreement"
+	"github.com/flaviotinococoutinho/intenza/internal/domain/event"
+	"github.com/flaviotinococoutinho/intenza/internal/domain/intent"
+	"github.com/flaviotinococoutinho/intenza/internal/domain/proposal"
+	"github.com/flaviotinococoutinho/intenza/internal/domain/reputation"
+	"github.com/flaviotinococoutinho/intenza/internal/domain/taxonomy"
+)
+
+var (
+	ErrNotFound    = errors.New("app: not found")
+	ErrConflict    = errors.New("app: concurrent update, try again")
+	ErrDuplicate   = errors.New("app: already exists")
+	ErrForbidden   = errors.New("app: not allowed")
+	ErrUnavailable = errors.New("app: dependency unavailable")
+)
+
+// Guard is a condition the store checks with the database clock while saving
+// an intent, inside the same update as the version check.
+type Guard int
+
+const (
+	GuardNone           Guard = iota
+	GuardOpenBeforeEnd        // status open and closes_at > $$NOW
+	GuardDeadlinePassed       // closes_at <= $$NOW
+	GuardSelectionOver        // select_by <= $$NOW
+)
+
+// Party is a registered person or company with its credentials.
+type Party struct {
+	ID          string                `json:"id"`
+	Name        string                `json:"name"`
+	Document    string                `json:"document"`
+	Kind        string                `json:"kind"` // person | company
+	Credentials []taxonomy.Credential `json:"credentials"`
+	Arbiter     bool                  `json:"arbiter"`
+	CreatedAt   time.Time             `json:"created_at"`
+}
+
+// Envelope is a domain event with the identity the outbox gives it.
+type Envelope struct {
+	ID          string
+	TraceParent string
+	event.Event
+}
+
+// Tx is everything a use case may touch inside one transaction.
+type Tx interface {
+	Now(ctx context.Context) (time.Time, error)
+
+	Intent(ctx context.Context, id string) (intent.Intent, error)
+	InsertIntent(ctx context.Context, in intent.Intent) error
+	SaveIntent(ctx context.Context, in intent.Intent, prevVersion int64, g Guard) error
+
+	Proposal(ctx context.Context, id string) (proposal.Proposal, error)
+	Proposals(ctx context.Context, intentID string) ([]proposal.Proposal, error)
+	InsertProposal(ctx context.Context, p proposal.Proposal) error
+	SaveProposal(ctx context.Context, p proposal.Proposal, prevVersion int64) error
+
+	Agreement(ctx context.Context, id string) (agreement.Agreement, error)
+	InsertAgreement(ctx context.Context, a agreement.Agreement) error
+	SaveAgreement(ctx context.Context, a agreement.Agreement, prevVersion int64) error
+
+	Party(ctx context.Context, id string) (Party, error)
+	InsertParty(ctx context.Context, p Party) error
+
+	RatingPair(ctx context.Context, agreementID string) (reputation.Pair, error)
+	SaveRatingPair(ctx context.Context, p reputation.Pair) error
+	InsertRatings(ctx context.Context, rs []reputation.Rating) error
+	Ratings(ctx context.Context, rateeID string, role reputation.Role) ([]reputation.Rating, error)
+
+	Outbox(ctx context.Context, events []Envelope) error
+}
+
+// Store runs transactions and the few queries that span aggregates.
+type Store interface {
+	Tx(ctx context.Context, fn func(ctx context.Context, tx Tx) error) error
+	View(ctx context.Context, fn func(ctx context.Context, tx Tx) error) error
+	OpenIntents(ctx context.Context, categoryID string, limit int) ([]intent.Intent, error)
+	DueIntents(ctx context.Context, limit int) (closing, expiring []string, err error)
+	DueAgreements(ctx context.Context, limit int) (ids []string, err error)
+}
+
+// Scheduler keeps a fast index of deadlines (Redis). It is an optimization:
+// the store's due queries are the source of truth when it fails.
+type Scheduler interface {
+	Schedule(ctx context.Context, kind, id string, at time.Time) error
+}
+
+// IDs mints identifiers.
+type IDs interface {
+	New() string
+	Derived(namespace, key string) string
+}
+
+// Clock is the local clock, for display only.
+type Clock interface {
+	Now() time.Time
+}
