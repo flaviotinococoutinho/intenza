@@ -113,6 +113,11 @@ func TestValidateCatchesOntologicalAndEpistemicErrors(t *testing.T) {
 		{"unknown standard", func(b *Base, _ *Facts) {
 			b.Concepts[0].GroundedIn = []string{"iso-0000"}
 		}, "norma desconhecida"},
+		{"a priori claim refuted by an experiment", func(b *Base, f *Facts) {
+			f.Experiments["race"] = true
+			f.Results["race"] = Result{Verdict: "falsified"}
+			b.Claims[0].FalsifiableBy = []string{"race"}
+		}, "refutada"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -193,5 +198,32 @@ func TestRenderCarriesClaimNotes(t *testing.T) {
 	got := string(Render(b, f, Validate(b, f)))
 	if !strings.Contains(got, "### Ressalvas\n\n- **one-deal**: prova o mecanismo, não o efeito\n") {
 		t.Errorf("notes not rendered:\n%s", got)
+	}
+}
+
+func TestExperimentsThatConcludeNothingOrSupportAConjecture(t *testing.T) {
+	warned := func(b Base, f Facts, want string) bool {
+		for _, fd := range Validate(b, f).Findings {
+			if fd.Severity == SevWarning && fd.Subject == "claim:one-deal" && strings.Contains(fd.Message, want) {
+				return true
+			}
+		}
+		return false
+	}
+	b, f := fixture()
+	f.Experiments["race"] = true
+	b.Claims[0].FalsifiableBy = []string{"race"}
+
+	f.Results["race"] = Result{Verdict: "aborted"}
+	if !warned(b, f, "nada se concluiu") {
+		t.Error("an aborted experiment must be reported as inconclusive")
+	}
+	f.Results["race"] = Result{Verdict: "held"}
+	if warned(b, f, "promova") {
+		t.Error("an a priori claim that held needs no promotion")
+	}
+	b.Claims[0].Basis, b.Claims[0].Evidence = Conjecture, nil
+	if !warned(b, f, "promova") {
+		t.Error("a conjecture that held should be promoted")
 	}
 }
