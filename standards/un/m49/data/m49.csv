@@ -1,0 +1,35 @@
+# ISO 3166-1 e UN M49 — compilação datasets/country-codes (ODC-PDDL) a partir da ISO e da UNSD
+# upstream country-codes.csv sha256=07918cb63dd8bc43e52110def00d490998634360605e9d8c602865e2260802fd
+# nomes pt: Unicode CLDR common/main/pt.xml sha256=f5511280d86e4382116882525ae0c88c906dd6fe0cbc892122f768f2fafd46ec (Unicode-3.0)
+# extraído em 2026-10-14
+code,parent,name_en,name_pt
+001,,World,Mundo
+002,001,Africa,África
+005,419,South America,América do Sul
+009,001,Oceania,Oceania
+011,202,Western Africa,África Ocidental
+013,419,Central America,América Central
+014,202,Eastern Africa,África Oriental
+015,002,Northern Africa,África Setentrional
+017,202,Middle Africa,África Central
+018,202,Southern Africa,África Meridional
+019,001,Americas,Américas
+021,019,Northern America,América Setentrional
+029,419,Caribbean,Caribe
+030,142,Eastern Asia,Ásia Oriental
+034,142,Southern Asia,Ásia Meridional
+035,142,South-eastern Asia,Sudeste Asiático
+039,150,Southern Europe,Europa Meridional
+053,009,Australia and New Zealand,Australásia
+054,009,Melanesia,Melanésia
+057,009,Micronesia,Região da Micronésia
+061,009,Polynesia,Polinésia
+142,001,Asia,Ásia
+143,142,Central Asia,Ásia Central
+145,142,Western Asia,Ásia Ocidental
+150,001,Europe,Europa
+151,150,Eastern Europe,Europa Oriental
+154,150,Northern Europe,Europa Setentrional
+155,150,Western Europe,Europa Ocidental
+202,002,Sub-Saharan Africa,África Subsaariana
+419,019,Latin America and the Caribbean,América Latina

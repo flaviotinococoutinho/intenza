@@ -1,0 +1,254 @@
+# ISO 3166-1 e UN M49 — compilação datasets/country-codes (ODC-PDDL) a partir da ISO e da UNSD
+# upstream country-codes.csv sha256=07918cb63dd8bc43e52110def00d490998634360605e9d8c602865e2260802fd
+# nomes pt: Unicode CLDR common/main/pt.xml sha256=f5511280d86e4382116882525ae0c88c906dd6fe0cbc892122f768f2fafd46ec (Unicode-3.0)
+# extraído em 2026-10-14
+alpha2,alpha3,numeric,name_en,name_pt,area
+AD,AND,020,Andorra,Andorra,039
+AE,ARE,784,United Arab Emirates,Emirados Árabes Unidos,145
+AF,AFG,004,Afghanistan,Afeganistão,034
+AG,ATG,028,Antigua and Barbuda,Antígua e Barbuda,029
+AI,AIA,660,Anguilla,Anguila,029
+AL,ALB,008,Albania,Albânia,039
+AM,ARM,051,Armenia,Armênia,145
+AO,AGO,024,Angola,Angola,017
+AQ,ATA,010,Antarctica,Antártida,001
+AR,ARG,032,Argentina,Argentina,005
+AS,ASM,016,American Samoa,Samoa Americana,061
+AT,AUT,040,Austria,Áustria,155
+AU,AUS,036,Australia,Austrália,053
+AW,ABW,533,Aruba,Aruba,029
+AX,ALA,248,Åland Islands,Ilhas Aland,154
+AZ,AZE,031,Azerbaijan,Azerbaijão,145
+BA,BIH,070,Bosnia and Herzegovina,Bósnia e Herzegovina,039
+BB,BRB,052,Barbados,Barbados,029
+BD,BGD,050,Bangladesh,Bangladesh,034
+BE,BEL,056,Belgium,Bélgica,155
+BF,BFA,854,Burkina Faso,Burquina Faso,011
+BG,BGR,100,Bulgaria,Bulgária,151
+BH,BHR,048,Bahrain,Barein,145
+BI,BDI,108,Burundi,Burundi,014
+BJ,BEN,204,Benin,Benin,011
+BL,BLM,652,Saint Barthélemy,São Bartolomeu,029
+BM,BMU,060,Bermuda,Bermudas,021
+BN,BRN,096,Brunei Darussalam,Brunei,035
+BO,BOL,068,Bolivia (Plurinational State of),Bolívia,005
+BQ,BES,535,"Bonaire, Sint Eustatius and Saba",Países Baixos Caribenhos,029
+BR,BRA,076,Brazil,Brasil,005
+BS,BHS,044,Bahamas,Bahamas,029
+BT,BTN,064,Bhutan,Butão,034
+BV,BVT,074,Bouvet Island,Ilha Bouvet,005
+BW,BWA,072,Botswana,Botsuana,018
+BY,BLR,112,Belarus,Bielorrússia,151
+BZ,BLZ,084,Belize,Belize,013
+CA,CAN,124,Canada,Canadá,021
+CC,CCK,166,Cocos (Keeling) Islands,Ilhas Cocos (Keeling),053
+CD,COD,180,Democratic Republic of the Congo,Congo - Kinshasa,017
+CF,CAF,140,Central African Republic,República Centro-Africana,017
+CG,COG,178,Congo,República do Congo,017
+CH,CHE,756,Switzerland,Suíça,155
+CI,CIV,384,Ivory Coast,Costa do Marfim,011
+CK,COK,184,Cook Islands,Ilhas Cook,061
+CL,CHL,152,Chile,Chile,005
+CM,CMR,120,Cameroon,Camarões,017
+CN,CHN,156,China,China,030
+CO,COL,170,Colombia,Colômbia,005
+CR,CRI,188,Costa Rica,Costa Rica,013
+CU,CUB,192,Cuba,Cuba,029
+CV,CPV,132,Cabo Verde,Cabo Verde,011
+CW,CUW,531,Curaçao,Curaçao,029
+CX,CXR,162,Christmas Island,Ilha Christmas,053
+CY,CYP,196,Cyprus,Chipre,145
+CZ,CZE,203,Czechia,Tchéquia,151
+DE,DEU,276,Germany,Alemanha,155
+DJ,DJI,262,Djibouti,Djibuti,014
+DK,DNK,208,Denmark,Dinamarca,154
+DM,DMA,212,Dominica,Dominica,029
+DO,DOM,214,Dominican Republic,República Dominicana,029
+DZ,DZA,012,Algeria,Argélia,015
+EC,ECU,218,Ecuador,Equador,005
+EE,EST,233,Estonia,Estônia,154
+EG,EGY,818,Egypt,Egito,015
+EH,ESH,732,Western Sahara,Saara Ocidental,015
+ER,ERI,232,Eritrea,Eritreia,014
+ES,ESP,724,Spain,Espanha,039
+ET,ETH,231,Ethiopia,Etiópia,014
+FI,FIN,246,Finland,Finlândia,154
+FJ,FJI,242,Fiji,Fiji,054
+FK,FLK,238,Falkland Islands,Ilhas Malvinas,005
+FM,FSM,583,Micronesia (Federated States of),Micronésia,057
+FO,FRO,234,Faroe Islands,Ilhas Faroé,154
+FR,FRA,250,France,França,155
+GA,GAB,266,Gabon,Gabão,017
+GB,GBR,826,United Kingdom of Great Britain and Northern Ireland,Reino Unido,154
+GD,GRD,308,Grenada,Granada,029
+GE,GEO,268,Georgia,Geórgia,145
+GF,GUF,254,French Guiana,Guiana Francesa,005
+GG,GGY,831,Guernsey,Guernsey,154
+GH,GHA,288,Ghana,Gana,011
+GI,GIB,292,Gibraltar,Gibraltar,039
+GL,GRL,304,Greenland,Groenlândia,021
+GM,GMB,270,Gambia,Gâmbia,011
+GN,GIN,324,Guinea,Guiné,011
+GP,GLP,312,Guadeloupe,Guadalupe,029
+GQ,GNQ,226,Equatorial Guinea,Guiné Equatorial,017
+GR,GRC,300,Greece,Grécia,039
+GS,SGS,239,South Georgia and the South Sandwich Islands,Ilhas Geórgia do Sul e Sandwich do Sul,005
+GT,GTM,320,Guatemala,Guatemala,013
+GU,GUM,316,Guam,Guam,057
+GW,GNB,624,Guinea-Bissau,Guiné-Bissau,011
+GY,GUY,328,Guyana,Guiana,005
+HK,HKG,344,"China, Hong Kong Special Administrative Region","Hong Kong, RAE da China",030
+HM,HMD,334,Heard Island and McDonald Islands,Ilhas Heard e McDonald,053
+HN,HND,340,Honduras,Honduras,013
+HR,HRV,191,Croatia,Croácia,039
+HT,HTI,332,Haiti,Haiti,029
+HU,HUN,348,Hungary,Hungria,151
+ID,IDN,360,Indonesia,Indonésia,035
+IE,IRL,372,Ireland,Irlanda,154
+IL,ISR,376,Israel,Israel,145
+IM,IMN,833,Isle of Man,Ilha de Man,154
+IN,IND,356,India,Índia,034
+IO,IOT,086,British Indian Ocean Territory,Território Britânico do Oceano Índico,014
+IQ,IRQ,368,Iraq,Iraque,145
+IR,IRN,364,Iran (Islamic Republic of),Irã,034
+IS,ISL,352,Iceland,Islândia,154
+IT,ITA,380,Italy,Itália,039
+JE,JEY,832,Jersey,Jersey,154
+JM,JAM,388,Jamaica,Jamaica,029
+JO,JOR,400,Jordan,Jordânia,145
+JP,JPN,392,Japan,Japão,030
+KE,KEN,404,Kenya,Quênia,014
+KG,KGZ,417,Kyrgyzstan,Quirguistão,143
+KH,KHM,116,Cambodia,Camboja,035
+KI,KIR,296,Kiribati,Quiribati,057
+KM,COM,174,Comoros,Comores,014
+KN,KNA,659,Saint Kitts and Nevis,São Cristóvão e Névis,029
+KP,PRK,408,Democratic People's Republic of Korea,Coreia do Norte,030
+KR,KOR,410,Republic of Korea,Coreia do Sul,030
+KW,KWT,414,Kuwait,Kuwait,145
+KY,CYM,136,Cayman Islands,Ilhas Cayman,029
+KZ,KAZ,398,Kazakhstan,Cazaquistão,143
+LA,LAO,418,Lao People's Democratic Republic,Laos,035
+LB,LBN,422,Lebanon,Líbano,145
+LC,LCA,662,Saint Lucia,Santa Lúcia,029
+LI,LIE,438,Liechtenstein,Liechtenstein,155
+LK,LKA,144,Sri Lanka,Sri Lanka,034
+LR,LBR,430,Liberia,Libéria,011
+LS,LSO,426,Lesotho,Lesoto,018
+LT,LTU,440,Lithuania,Lituânia,154
+LU,LUX,442,Luxembourg,Luxemburgo,155
+LV,LVA,428,Latvia,Letônia,154
+LY,LBY,434,Libya,Líbia,015
+MA,MAR,504,Morocco,Marrocos,015
+MC,MCO,492,Monaco,Mônaco,155
+MD,MDA,498,Republic of Moldova,Moldávia,151
+ME,MNE,499,Montenegro,Montenegro,039
+MF,MAF,663,Saint Martin (French Part),São Martinho,029
+MG,MDG,450,Madagascar,Madagascar,014
+MH,MHL,584,Marshall Islands,Ilhas Marshall,057
+MK,MKD,807,North Macedonia,Macedônia do Norte,039
+ML,MLI,466,Mali,Mali,011
+MM,MMR,104,Myanmar,Mianmar (Birmânia),035
+MN,MNG,496,Mongolia,Mongólia,030
+MO,MAC,446,"China, Macao Special Administrative Region","Macau, RAE da China",030
+MP,MNP,580,Northern Mariana Islands,Ilhas Marianas do Norte,057
+MQ,MTQ,474,Martinique,Martinica,029
+MR,MRT,478,Mauritania,Mauritânia,011
+MS,MSR,500,Montserrat,Montserrat,029
+MT,MLT,470,Malta,Malta,039
+MU,MUS,480,Mauritius,Maurício,014
+MV,MDV,462,Maldives,Maldivas,034
+MW,MWI,454,Malawi,Malaui,014
+MX,MEX,484,Mexico,México,013
+MY,MYS,458,Malaysia,Malásia,035
+MZ,MOZ,508,Mozambique,Moçambique,014
+NA,NAM,516,Namibia,Namíbia,018
+NC,NCL,540,New Caledonia,Nova Caledônia,054
+NE,NER,562,Niger,Níger,011
+NF,NFK,574,Norfolk Island,Ilha Norfolk,053
+NG,NGA,566,Nigeria,Nigéria,011
+NI,NIC,558,Nicaragua,Nicarágua,013
+NL,NLD,528,Netherlands,Países Baixos,155
+NO,NOR,578,Norway,Noruega,154
+NP,NPL,524,Nepal,Nepal,034
+NR,NRU,520,Nauru,Nauru,057
+NU,NIU,570,Niue,Niue,061
+NZ,NZL,554,New Zealand,Nova Zelândia,053
+OM,OMN,512,Oman,Omã,145
+PA,PAN,591,Panama,Panamá,013
+PE,PER,604,Peru,Peru,005
+PF,PYF,258,French Polynesia,Polinésia Francesa,061
+PG,PNG,598,Papua New Guinea,Papua-Nova Guiné,054
+PH,PHL,608,Philippines,Filipinas,035
+PK,PAK,586,Pakistan,Paquistão,034
+PL,POL,616,Poland,Polônia,151
+PM,SPM,666,Saint Pierre and Miquelon,São Pedro e Miquelão,021
+PN,PCN,612,Pitcairn,Ilhas Pitcairn,061
+PR,PRI,630,Puerto Rico,Porto Rico,029
+PS,PSE,275,State of Palestine,Territórios palestinos,145
+PT,PRT,620,Portugal,Portugal,039
+PW,PLW,585,Palau,Palau,057
+PY,PRY,600,Paraguay,Paraguai,005
+QA,QAT,634,Qatar,Catar,145
+RE,REU,638,Réunion,Reunião,014
+RO,ROU,642,Romania,Romênia,151
+RS,SRB,688,Serbia,Sérvia,039
+RU,RUS,643,Russian Federation,Rússia,151
+RW,RWA,646,Rwanda,Ruanda,014
+SA,SAU,682,Saudi Arabia,Arábia Saudita,145
+SB,SLB,090,Solomon Islands,Ilhas Salomão,054
+SC,SYC,690,Seychelles,Seicheles,014
+SD,SDN,729,Sudan,Sudão,015
+SE,SWE,752,Sweden,Suécia,154
+SG,SGP,702,Singapore,Singapura,035
+SH,SHN,654,Saint Helena,Santa Helena,011
+SI,SVN,705,Slovenia,Eslovênia,039
+SJ,SJM,744,Svalbard and Jan Mayen Islands,Svalbard e Jan Mayen,154
+SK,SVK,703,Slovakia,Eslováquia,151
+SL,SLE,694,Sierra Leone,Serra Leoa,011
+SM,SMR,674,San Marino,San Marino,039
+SN,SEN,686,Senegal,Senegal,011
+SO,SOM,706,Somalia,Somália,014
+SR,SUR,740,Suriname,Suriname,005
+SS,SSD,728,South Sudan,Sudão do Sul,014
+ST,STP,678,Sao Tome and Principe,São Tomé e Príncipe,017
+SV,SLV,222,El Salvador,El Salvador,013
+SX,SXM,534,Sint Maarten (Dutch part),Sint Maarten,029
+SY,SYR,760,Syrian Arab Republic,Síria,145
+SZ,SWZ,748,Eswatini,Essuatíni,018
+TC,TCA,796,Turks and Caicos Islands,Ilhas Turcas e Caicos,029
+TD,TCD,148,Chad,Chade,017
+TF,ATF,260,French Southern Territories,Territórios Franceses do Sul,014
+TG,TGO,768,Togo,Togo,011
+TH,THA,764,Thailand,Tailândia,035
+TJ,TJK,762,Tajikistan,Tadjiquistão,143
+TK,TKL,772,Tokelau,Tokelau,061
+TL,TLS,626,Timor-Leste,Timor-Leste,035
+TM,TKM,795,Turkmenistan,Turcomenistão,143
+TN,TUN,788,Tunisia,Tunísia,015
+TO,TON,776,Tonga,Tonga,061
+TR,TUR,792,Türkiye,Turquia,145
+TT,TTO,780,Trinidad and Tobago,Trinidad e Tobago,029
+TV,TUV,798,Tuvalu,Tuvalu,061
+TW,TWN,158,Taiwan,Taiwan,030
+TZ,TZA,834,United Republic of Tanzania,Tanzânia,014
+UA,UKR,804,Ukraine,Ucrânia,151
+UG,UGA,800,Uganda,Uganda,014
+UM,UMI,581,United States Minor Outlying Islands,Ilhas Menores Distantes dos EUA,057
+US,USA,840,United States of America,Estados Unidos,021
+UY,URY,858,Uruguay,Uruguai,005
+UZ,UZB,860,Uzbekistan,Uzbequistão,143
+VA,VAT,336,Holy See,Cidade do Vaticano,039
+VC,VCT,670,Saint Vincent and the Grenadines,São Vicente e Granadinas,029
+VE,VEN,862,Venezuela (Bolivarian Republic of),Venezuela,005
+VG,VGB,092,British Virgin Islands,Ilhas Virgens Britânicas,029
+VI,VIR,850,United States Virgin Islands,Ilhas Virgens Americanas,029
+VN,VNM,704,Viet Nam,Vietnã,035
+VU,VUT,548,Vanuatu,Vanuatu,054
+WF,WLF,876,Wallis and Futuna Islands,Wallis e Futuna,061
+WS,WSM,882,Samoa,Samoa,061
+YE,YEM,887,Yemen,Iêmen,145
+YT,MYT,175,Mayotte,Mayotte,014
+ZA,ZAF,710,South Africa,África do Sul,018
+ZM,ZMB,894,Zambia,Zâmbia,014
+ZW,ZWE,716,Zimbabwe,Zimbábue,014
