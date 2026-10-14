@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.go diff=golang
+zz_*.go linguist-generated=true
+*_gen.go linguist-generated=true

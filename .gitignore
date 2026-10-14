@@ -1,0 +1,21 @@
+# binários e build
+/bin/
+/dist/
+*.test
+*.out
+coverage.*
+
+# ambiente local
+.env
+.env.*
+!.env.example
+*.local
+
+# editores e SO
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# artefatos de caos que não entram no histórico
+/chaos/tmp/
