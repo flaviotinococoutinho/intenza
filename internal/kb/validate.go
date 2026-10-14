@@ -53,11 +53,12 @@ func (r Report) Errors() int {
 var idPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 
 type checker struct {
-	base     Base
-	facts    Facts
-	concepts map[string]Concept
-	claims   map[string]Claim
-	findings []Finding
+	base      Base
+	facts     Facts
+	concepts  map[string]Concept
+	claims    map[string]Claim
+	standards map[string]Standard
+	findings  []Finding
 }
 
 func (c *checker) add(sev Severity, subject, format string, args ...any) {
@@ -67,9 +68,13 @@ func (c *checker) add(sev Severity, subject, format string, args ...any) {
 // Validate checks the declared knowledge against the facts of the world.
 // It is deterministic: findings come out sorted.
 func Validate(b Base, f Facts) Report {
-	c := &checker{base: b, facts: f, concepts: map[string]Concept{}, claims: map[string]Claim{}}
+	c := &checker{base: b, facts: f, concepts: map[string]Concept{}, claims: map[string]Claim{}, standards: map[string]Standard{}}
+	for _, s := range f.Standards {
+		c.standards[s.ID] = s
+	}
 	c.indexConcepts()
 	c.checkConcepts()
+	c.checkStandards()
 	c.indexClaims()
 	c.checkClaims()
 	risks := c.checkRisks()
@@ -197,7 +202,7 @@ func (c *checker) checkConcepts() {
 			c.ref(subj, "part_of", k.PartOf)
 		}
 		for _, id := range k.GroundedIn {
-			if !c.facts.Standards[id] {
+			if _, ok := c.standards[id]; !ok {
 				c.add(SevError, subj, "grounded_in aponta para norma desconhecida %q", id)
 			}
 		}
@@ -210,6 +215,26 @@ func (c *checker) checkConcepts() {
 	for _, k := range c.base.Concepts {
 		if n, ok := phases[k.ID]; ok && n < 2 {
 			c.add(SevError, "concept:"+k.ID, "fases formam partição: são precisas pelo menos duas")
+		}
+	}
+}
+
+// checkStandards keeps the normative chain honest: a norm nobody grounds on
+// is dead weight, and a reconstructed source is debt until reviewed.
+func (c *checker) checkStandards() {
+	grounded := map[string]bool{}
+	for _, k := range c.base.Concepts {
+		for _, id := range k.GroundedIn {
+			grounded[id] = true
+		}
+	}
+	for _, s := range c.facts.Standards {
+		subj := "standard:" + s.ID
+		if !grounded[s.ID] {
+			c.add(SevWarning, subj, "norma sem conceito ancorado (grounded_in)")
+		}
+		if s.Grounding == "reconstructed" {
+			c.add(SevWarning, subj, "fonte reconstruída: precisa de revisão de especialista")
 		}
 	}
 }

@@ -228,7 +228,21 @@ type Facts struct {
 	Packages    []Package
 	Experiments map[string]bool
 	Results     map[string]Result
-	Standards   map[string]bool
+	Standards   []Standard
+}
+
+// Standard is the epistemic record of a normative reference implemented by an
+// SDK of the standards module, flattened for the knowledge base.
+type Standard struct {
+	ID        string
+	Code      string
+	Title     string
+	Authority string
+	Kind      string
+	Edition   string
+	Package   string
+	Structure string
+	Grounding string // weakest grounding among its sources
 }
 
 // Package summarizes one Go package for the paradigm rules.

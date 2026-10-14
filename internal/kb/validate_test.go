@@ -44,6 +44,8 @@ func fixture() (Base, Facts) {
 		Results:     map[string]Result{"load": {Verdict: "held"}},
 		Packages:    []Package{{Dir: "internal/x", Paradigm: FunctionalCore, Imports: []string{"strings"}}},
 	}
+	b.Concepts[0].GroundedIn = []string{"rfb-cpf"}
+	f.Standards = []Standard{{ID: "rfb-cpf", Code: "CPF", Authority: "RFB", Kind: "identifier", Grounding: "algorithmic"}}
 	return b, f
 }
 
@@ -124,6 +126,20 @@ func TestValidateCatchesOntologicalAndEpistemicErrors(t *testing.T) {
 			}
 			t.Fatalf("want error containing %q, got %v", tc.want, r.Findings)
 		})
+	}
+}
+
+func TestNormativeChainWarnings(t *testing.T) {
+	b, f := fixture()
+	f.Standards = append(f.Standards, Standard{ID: "ibge-uf", Grounding: "reconstructed"})
+	r := Validate(b, f)
+	var unused, reconstructed bool
+	for _, fd := range r.Findings {
+		unused = unused || (fd.Subject == "standard:ibge-uf" && strings.Contains(fd.Message, "sem conceito"))
+		reconstructed = reconstructed || (fd.Subject == "standard:ibge-uf" && strings.Contains(fd.Message, "reconstruída"))
+	}
+	if !unused || !reconstructed || r.Errors() != 0 {
+		t.Fatalf("want two warnings and no error, got %v", r.Findings)
 	}
 }
 

@@ -110,7 +110,7 @@ func TestRepositoryKnowledgeBaseIsConsistent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	facts, err := Gather(root, nil)
+	facts, err := Gather(root, Standards())
 	if err != nil {
 		t.Fatal(err)
 	}

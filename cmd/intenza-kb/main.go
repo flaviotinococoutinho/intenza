@@ -70,15 +70,12 @@ func load(root string) (kb.Base, kb.Facts, kb.Report, error) {
 	if err != nil {
 		return kb.Base{}, kb.Facts{}, kb.Report{}, err
 	}
-	facts, err := source.Gather(root, standardIDs())
+	facts, err := source.Gather(root, source.Standards())
 	if err != nil {
 		return kb.Base{}, kb.Facts{}, kb.Report{}, err
 	}
 	return base, facts, kb.Validate(base, facts), nil
 }
-
-// standardIDs lists the normative references the ontology may be grounded in.
-func standardIDs() map[string]bool { return map[string]bool{} }
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "uso: intenza-kb check|render [-root .] [-o arquivo]")

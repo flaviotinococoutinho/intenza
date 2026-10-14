@@ -21,6 +21,7 @@ func Render(b Base, f Facts, r Report) []byte {
 	renderRisks(p, b, r)
 	renderClaims(p, b)
 	renderOntology(p, b)
+	renderStandards(p, b, f)
 	renderParadigms(p, f)
 	renderFindings(p, r)
 	return []byte(w.String())
@@ -216,6 +217,34 @@ func codeList(syms []string) string {
 		out[i] = "`" + s + "`"
 	}
 	return strings.Join(out, "<br>")
+}
+
+func renderStandards(p printer, b Base, f Facts) {
+	if len(f.Standards) == 0 {
+		return
+	}
+	p("## Normas\n\n")
+	p("Cadeia taxonômica: autoridade → norma → edição → tipo de artefato → pacote → conceitos que se apoiam nela. ")
+	p("A fundamentação mostrada é a do elo mais fraco entre as fontes: primária, secundária, reconstruída ou algorítmica.\n\n")
+	grounds := map[string][]string{}
+	for _, k := range b.Concepts {
+		for _, id := range k.GroundedIn {
+			grounds[id] = append(grounds[id], k.ID)
+		}
+	}
+	p("| autoridade | norma | tipo | edição | fundamentação | estrutura | pacote | ancora |\n|---|---|---|---|---|---|---|---|\n")
+	stds := slices.Clone(f.Standards)
+	slices.SortFunc(stds, func(a, c Standard) int {
+		if d := strings.Compare(a.Authority, c.Authority); d != 0 {
+			return d
+		}
+		return strings.Compare(a.Code, c.Code)
+	})
+	for _, s := range stds {
+		p("| %s | **%s**<br>%s | %s | %s | %s | %s | `standards/%s` | %s |\n", s.Authority, s.Code, cell(s.Title), s.Kind,
+			cell(s.Edition), s.Grounding, cell(s.Structure), s.Package, strings.Join(grounds[s.ID], ", "))
+	}
+	p("\n")
 }
 
 func renderParadigms(p printer, f Facts) {

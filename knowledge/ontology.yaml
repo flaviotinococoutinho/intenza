@@ -62,6 +62,7 @@ concepts:
   - id: category
     label: Categoria
     category: type
+    grounded_in: [iso-18245]
     classifies: item
     part_of: niche
     definition: Tipo de alta ordem, suas instâncias são tipos de item (carta TCG, tênis, porta dianteira). Ancora no MCC e define as qualidades que o item carrega.
@@ -137,6 +138,7 @@ concepts:
   - id: money
     label: Dinheiro
     category: datatype
+    grounded_in: [iso-4217]
     definition: Quantia em unidades menores de uma moeda.
 
   - id: duration
@@ -152,6 +154,7 @@ concepts:
   - id: mcc
     label: MCC
     category: datatype
+    grounded_in: [iso-18245]
     definition: Código de categoria de comerciante que ancora a taxonomia curada.
 
   - id: cpf
@@ -192,21 +195,25 @@ concepts:
   - id: state
     label: UF
     category: datatype
+    grounded_in: [ibge-uf]
     definition: Unidade federativa, com região geográfica.
 
   - id: country
     label: País
     category: datatype
+    grounded_in: [iso-3166-1, un-m49]
     definition: País ou território, encadeado às regiões estatísticas.
 
   - id: language
     label: Idioma
     category: datatype
+    grounded_in: [iso-639]
     definition: Idioma de um item, como a língua de impressão de uma carta.
 
   - id: currency
     label: Moeda
     category: datatype
+    grounded_in: [iso-4217]
     definition: Moeda com código alfabético, numérico e unidades menores.
 
   - id: payment-code
