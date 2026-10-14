@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: intenza
+    folder: Intenza
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

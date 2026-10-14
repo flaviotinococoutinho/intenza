@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/flaviotinococoutinho/intenza/internal/platform/clock"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/config"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/logx"
+	"github.com/flaviotinococoutinho/intenza/internal/platform/telemetry"
 	"github.com/flaviotinococoutinho/intenza/internal/wiring"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso8601"
 )
@@ -39,7 +41,12 @@ func run(log *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	store, err := mongo.Connect(ctx, cfg.MongoURI, cfg.MongoDB, cfg.MongoTimeout)
+	tel, err := telemetry.Setup(ctx, "intenza-api", cfg.OTLPEndpoint)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tel.Shutdown(context.WithoutCancel(ctx)) }()
+	store, err := mongo.Connect(ctx, cfg.MongoURI, cfg.MongoDB, cfg.MongoTimeout, tel.MongoMonitor())
 	if err != nil {
 		return err
 	}
@@ -49,9 +56,14 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	market.Obs = tel
 	deps := httpapi.Deps{
 		Market: market, JWTSecret: []byte(cfg.JWTSecret), DevAuth: cfg.DevAuth, MaxInFlight: 512, Log: log,
 		Back: store, WebhookKey: []byte(cfg.WebhookSecret),
+		Wrap: func(h http.Handler) http.Handler { return tel.HTTP(h, "intenza-api") },
+		OnLimit: func(scope string, degraded bool) {
+			tel.HTTPRateLimited.Add(ctx, 1, telemetry.Attrs("scope", scope, "degraded", strconv.FormatBool(degraded)))
+		},
 	}
 	checks := []admin.Check{{Name: "mongo", Fn: store.Ping}}
 	if rdb != nil {
@@ -60,6 +72,7 @@ func run(log *slog.Logger) error {
 		defer rdb.Close()
 	}
 	adm := admin.New(checks...)
+	adm.Mux.Handle("GET /metrics", tel.MetricsHandler())
 	if cfg.Faults {
 		adm.EnableFaults()
 		clk := market.Clock.(*clock.System)

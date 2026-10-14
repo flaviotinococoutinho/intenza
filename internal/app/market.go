@@ -33,6 +33,13 @@ type Market struct {
 	Settlement agreement.Policy
 	RatingDays int
 	Log        *slog.Logger
+	Obs        Observer
+}
+
+func (m *Market) fact(ctx context.Context, name string) {
+	if m.Obs != nil {
+		m.Obs.Fact(ctx, name)
+	}
 }
 
 func (m *Market) stamp(ctx context.Context, evs []event.Event) []Envelope {
@@ -139,6 +146,7 @@ func (m *Market) PublishIntent(ctx context.Context, buyerID, idempotencyKey stri
 		return tx.Outbox(ctx, m.stamp(ctx, evs))
 	})
 	if err == nil && created {
+		m.fact(ctx, "intent.published")
 		m.schedule(ctx, "intent-close", out.ID, out.ClosesAt)
 	}
 	return out, created, err
@@ -244,6 +252,9 @@ func (m *Market) SubmitProposal(ctx context.Context, sellerID, intentID string, 
 		out = p
 		return tx.Outbox(ctx, m.stamp(ctx, evs))
 	})
+	if err == nil {
+		m.fact(ctx, "proposal.submitted")
+	}
 	return out, err
 }
 
@@ -370,6 +381,7 @@ func (m *Market) Proposals(ctx context.Context, viewerID, intentID string) ([]Pr
 			case err == nil:
 				v.TotalPrice = &price
 			case errors.Is(err, proposal.ErrSealedNow):
+				m.fact(ctx, "seal.kept")
 			default:
 				return err
 			}
@@ -557,6 +569,7 @@ func (m *Market) Award(ctx context.Context, buyerID, intentID, proposalID string
 		return tx.Outbox(ctx, m.stamp(ctx, append(evs, aevs...)))
 	})
 	if err == nil {
+		m.fact(ctx, "agreement.formed")
 		m.schedule(ctx, "agreement-funding", out.ID, out.FundBy)
 	}
 	return out, err
@@ -669,6 +682,13 @@ func (m *Market) Settle(ctx context.Context, id string, released bool) (agreemen
 	a, err := m.mutateAgreement(ctx, id, func(a agreement.Agreement, now time.Time, _ Tx) (agreement.Agreement, []event.Event, error) {
 		return a.Settled(released, now)
 	})
+	if err == nil {
+		if released {
+			m.fact(ctx, "escrow.released")
+		} else {
+			m.fact(ctx, "escrow.refunded")
+		}
+	}
 	return a, err
 }
 

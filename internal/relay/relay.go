@@ -100,7 +100,9 @@ func (r *Relay) publish(ctx context.Context, batch []doc) error {
 		r.Log.Warn("falha injetada: saindo depois de publicar e antes de marcar", "n", len(batch))
 		r.Exit(3)
 	}
-	_, err := r.DB.Collection("outbox").UpdateMany(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$in", Value: ids}}}},
+	mctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	_, err := r.DB.Collection("outbox").UpdateMany(mctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$in", Value: ids}}}},
 		bson.D{{Key: "$set", Value: bson.D{{Key: "published", Value: true}, {Key: "published_at", Value: time.Now()}}}})
 	if err == nil && r.OnPublished != nil {
 		r.OnPublished(len(batch), oldest)
@@ -171,15 +173,19 @@ func (r *Relay) sweep(ctx context.Context, work chan<- []doc) {
 			return
 		case <-t.C:
 		}
-		cur, err := r.DB.Collection("outbox").Find(ctx,
+		qctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		cur, err := r.DB.Collection("outbox").Find(qctx,
 			bson.D{{Key: "published", Value: false}, {Key: "time", Value: bson.D{{Key: "$lt", Value: time.Now().Add(-r.Grace)}}}},
 			options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}).SetLimit(int64(r.Batch)))
 		if err != nil {
+			cancel()
 			r.Log.WarnContext(ctx, "varredura do outbox falhou", "err", err)
 			continue
 		}
 		var batch []doc
-		if err := cur.All(ctx, &batch); err != nil || len(batch) == 0 {
+		err = cur.All(qctx, &batch)
+		cancel()
+		if err != nil || len(batch) == 0 {
 			continue
 		}
 		select {

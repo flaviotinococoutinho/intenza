@@ -170,3 +170,8 @@ type Backoffice interface {
 	Notify(ctx context.Context, intentID string, partyIDs []string) error
 	Notifications(ctx context.Context, partyID string, limit int) ([]Notification, error)
 }
+
+// Observer counts business facts (metrics); optional.
+type Observer interface {
+	Fact(ctx context.Context, name string)
+}

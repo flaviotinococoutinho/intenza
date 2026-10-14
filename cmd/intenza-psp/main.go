@@ -12,6 +12,7 @@ import (
 	"github.com/flaviotinococoutinho/intenza/internal/platform/admin"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/config"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/logx"
+	"github.com/flaviotinococoutinho/intenza/internal/platform/telemetry"
 	"github.com/flaviotinococoutinho/intenza/internal/psp"
 )
 
@@ -22,10 +23,17 @@ func main() {
 		log.Error("configuração", "err", err)
 		os.Exit(1)
 	}
+	tel, err := telemetry.Setup(context.Background(), "intenza-psp", cfg.OTLPEndpoint)
+	if err != nil {
+		log.Error("telemetria", "err", err)
+		os.Exit(1)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	defer func() { _ = tel.Shutdown(context.WithoutCancel(ctx)) }()
 	sim := psp.New(cfg.WebhookURL, []byte(cfg.WebhookSecret), cfg.PSPSeed, log)
 	adm := admin.New()
+	adm.Mux.Handle("GET /metrics", tel.MetricsHandler())
 	adm.EnableFaults() // the simulator exists to be broken
 	for _, name := range []string{"latency_median", "latency_sigma", "error_rate", "webhook_drop", "webhook_dup", "webhook_delay", "auto_pay_after"} {
 		adm.Register(name, admin.Fault{
@@ -60,7 +68,7 @@ func main() {
 	go sim.Run(ctx)
 	go func() { _ = admin.Serve(ctx, cfg.Admin, adm.Mux) }()
 	log.Info("psp simulado no ar", "http", cfg.HTTPAddr, "webhook", cfg.WebhookURL)
-	if err := admin.Serve(ctx, cfg.HTTPAddr, sim.Handler()); err != nil {
+	if err := admin.Serve(ctx, cfg.HTTPAddr, tel.HTTP(sim.Handler(), "intenza-psp")); err != nil {
 		log.Error("encerrando", "err", err)
 	}
 }

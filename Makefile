@@ -10,7 +10,7 @@ GOLANGCI := $(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(G
 GOVULNCHECK := $(GO) run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 .DEFAULT_GOAL := help
-.PHONY: help tidy fmt lint test test-race test-integration cover bench vuln generate generate-check check kb
+.PHONY: help tidy fmt lint test test-race test-integration cover bench vuln generate generate-check check kb linux-binaries up up-obs down ps logs
 
 help: ## lista os alvos
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -54,3 +54,24 @@ check: lint test-race generate-check ## o mesmo que a CI roda
 
 kb: ## confere a base de conhecimento contra o código
 	$(GO) run ./cmd/intenza-kb check
+
+COMPOSE := docker compose -f deploy/compose.yaml
+LINUX_ARCH ?= $(shell $(GO) env GOARCH)
+
+linux-binaries: ## compila os binários linux no host para a imagem local
+	GOOS=linux GOARCH=$(LINUX_ARCH) CGO_ENABLED=0 $(GO) build -trimpath -ldflags "-s -w" -o bin/linux/ ./cmd/...
+
+up: linux-binaries ## sobe a pilha (mongo, redis, kafka, toxiproxy, serviços e prometheus)
+	$(COMPOSE) up -d --build --wait
+
+up-obs: linux-binaries ## sobe também grafana (localhost:3000) e jaeger (localhost:16686)
+	$(COMPOSE) --profile obs up -d --build --wait
+
+down: ## derruba a pilha e apaga os volumes
+	$(COMPOSE) --profile obs down -v
+
+ps: ## estado dos containers
+	$(COMPOSE) ps
+
+logs: ## logs dos serviços do intenza
+	$(COMPOSE) logs -f api relay worker psp

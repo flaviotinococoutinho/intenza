@@ -14,7 +14,7 @@ risks:
     cause: Caminho não previsto expõe o preço (log, evento, dump, consulta ampla, revelação antecipada).
     mechanism: Concorrente ou comprador vê preços antes do fechamento e passa a ancorar ou combinar.
     effect: A proposta selada vira leilão aberto disfarçado e os melhores vendedores saem.
-    signals: [intenza_seal_open_denied_total]
+    signals: ['intenza_business_events_total{fact="seal.kept"}']
     severity: 5
     likelihood: 3
     mitigated_by: [sealed-price-encrypted-at-rest, reveal-gated-by-persisted-close, events-carry-no-price]
@@ -169,7 +169,7 @@ risks:
     cause: Agente externo com latência lognormal e picos.
     mechanism: Chamadas presas seguram conexões e goroutines e a fila cresce.
     effect: Latência da API sobe para todo mundo, não só para quem paga.
-    signals: [intenza_psp_request_duration_seconds, intenza_breaker_state]
+    signals: [intenza_escrow_call_duration_seconds, intenza_escrow_calls_total, intenza_breaker_state]
     severity: 4
     likelihood: 4
     mitigated_by: [psp-calls-bounded]
@@ -193,7 +193,7 @@ risks:
     cause: Redis cai, pausa ou fica lento.
     mechanism: Idempotência rápida, limite de taxa, prazos e cache perdem o apoio.
     effect: Duplicata, rajada sem limite ou fechamento atrasado se não houver degradação planejada.
-    signals: [intenza_redis_errors_total]
+    signals: ['intenza_ratelimit_rejected_total{degraded="true"}', 'intenza_deadline_lateness_seconds{source="sweep"}']
     severity: 4
     likelihood: 3
     mitigated_by: [intent-creation-idempotent, deadlines-survive-redis-loss]
@@ -219,6 +219,7 @@ risks:
     effect: A API pendura em vez de falhar rápido.
     severity: 4
     likelihood: 2
+    signals: [intenza_mongo_command_duration_seconds, http_server_request_duration_seconds]
     mitigated_by: [mongo-outage-fails-fast]
 
   - id: poison-message
@@ -230,6 +231,7 @@ risks:
     effect: A partição para e o atraso cresce sem limite.
     severity: 3
     likelihood: 2
+    signals: ['intenza_consumer_events_total{result="dead-lettered"}']
     mitigated_by: [poison-message-isolated]
 
   - id: cache-stampede

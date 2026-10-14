@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/flaviotinococoutinho/intenza/internal/adapter/escrow"
 	"github.com/flaviotinococoutinho/intenza/internal/adapter/kafka"
 	"github.com/flaviotinococoutinho/intenza/internal/adapter/mongo"
@@ -22,6 +24,7 @@ import (
 	"github.com/flaviotinococoutinho/intenza/internal/platform/admin"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/config"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/logx"
+	"github.com/flaviotinococoutinho/intenza/internal/platform/telemetry"
 	"github.com/flaviotinococoutinho/intenza/internal/wiring"
 )
 
@@ -55,7 +58,12 @@ func run(log *slog.Logger) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	store, err := mongo.Connect(ctx, cfg.MongoURI, cfg.MongoDB, cfg.MongoTimeout)
+	tel, err := telemetry.Setup(ctx, "intenza-worker", cfg.OTLPEndpoint)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tel.Shutdown(context.WithoutCancel(ctx)) }()
+	store, err := mongo.Connect(ctx, cfg.MongoURI, cfg.MongoDB, cfg.MongoTimeout, tel.MongoMonitor())
 	if err != nil {
 		return err
 	}
@@ -69,12 +77,26 @@ func run(log *slog.Logger) error {
 		defer rdb.Close()
 		checks = append(checks, admin.Check{Name: "redis", Fn: rdb.Ping})
 	}
+	market.Obs = tel
 	adm := admin.New(checks...)
+	adm.Mux.Handle("GET /metrics", tel.MetricsHandler())
 	go func() { _ = admin.Serve(ctx, cfg.Admin, adm.Mux) }()
+	traced := func(group string, h kafka.Handler) (kafka.Handler, func(topic, result string)) {
+		return func(ctx context.Context, e kafka.Event) error {
+				ctx, span := tel.Tracer.Start(telemetry.FromTraceParent(ctx, e.TraceParent), "consume "+e.Type,
+					trace.WithSpanKind(trace.SpanKindConsumer))
+				defer span.End()
+				return h(ctx, e)
+			}, func(topic, result string) {
+				tel.ConsumerEvents.Add(ctx, 1, telemetry.Attrs("group", group, "topic", topic, "result", result))
+			}
+	}
 
 	has := func(role string) bool { return slices.Contains(cfg.WorkerRoles, role) }
 	if has("deadlines") {
-		d := &app.Deadlines{Market: market, Log: log}
+		d := &app.Deadlines{Market: market, Log: log, OnFire: func(kind, source string, late time.Duration) {
+			tel.DeadlineLateness.Record(ctx, late.Seconds(), telemetry.Attrs("kind", kind, "source", source))
+		}}
 		if rdb != nil {
 			d.Claim = rdb.ClaimDue
 		}
@@ -82,11 +104,17 @@ func run(log *slog.Logger) error {
 		go every(ctx, 5*time.Second, d.Sweep, log, "deadlines-sweep")
 	}
 	esc := escrow.New(cfg.EscrowURL, cfg.EscrowTimeout, log)
+	esc.OnCall = func(op, result string, d time.Duration) {
+		tel.EscrowCalls.Add(ctx, 1, telemetry.Attrs("op", op, "result", result))
+		tel.EscrowDuration.Record(ctx, d.Seconds(), telemetry.Attrs("op", op))
+	}
+	esc.OnState = func(state int) { tel.BreakerState.Record(ctx, int64(state), telemetry.Attrs("name", "escrow")) }
 	settlement := &app.Settlement{Market: market, Escrow: esc, Back: store, Log: log}
 	if has("settlement") {
+		h, onResult := traced("settlement", func(ctx context.Context, e kafka.Event) error { return settlement.Handle(ctx, e.Type, e.Subject) })
 		c := &kafka.Consumer{
 			Group: "settlement", Topics: []string{kafka.TopicAgreements}, Brokers: cfg.KafkaBrokers, Log: log,
-			Handle: func(ctx context.Context, e kafka.Event) error { return settlement.Handle(ctx, e.Type, e.Subject) },
+			Handle: h, OnResult: onResult,
 		}
 		go c.Loop(ctx)
 	}
@@ -101,14 +129,15 @@ func run(log *slog.Logger) error {
 	}
 	if has("fanout") {
 		f := app.NewFanout(market, store, store, cfg.FanoutK, cfg.FanoutSeed, log)
+		h, onResult := traced("fanout", func(ctx context.Context, e kafka.Event) error {
+			if e.Type != intent.EvPublished {
+				return nil
+			}
+			return f.Handle(ctx, e.ID, e.Subject)
+		})
 		c := &kafka.Consumer{
 			Group: "fanout", Topics: []string{kafka.TopicIntents}, Brokers: cfg.KafkaBrokers, Log: log,
-			Handle: func(ctx context.Context, e kafka.Event) error {
-				if e.Type != intent.EvPublished {
-					return nil
-				}
-				return f.Handle(ctx, e.ID, e.Subject)
-			},
+			Handle: h, OnResult: onResult,
 		}
 		go c.Loop(ctx)
 	}
