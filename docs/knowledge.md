@@ -105,12 +105,12 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | **payment-institution-regulated** | Custódia de recursos de terceiros exige instituição de pagamento autorizada pelo Banco Central. | regulatory | testemunho | Lei nº 12.865/2013 (arranjos e instituições de pagamento do SPB) e regulamentação do BCB |
 | **backlog-drains** | Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento. | liveness | conjectura |  |
 | **cache-early-refresh** | Expiração antecipada probabilística evita estouro de recomputação no cache de reputação. | performance | conjectura |  |
-| **deadlines-survive-redis-loss** | Sem Redis, os fechamentos acontecem pela varredura no banco com atraso abaixo de 30 s. | liveness | conjectura |  |
+| **deadlines-survive-redis-loss** | Sem Redis, os fechamentos acontecem pela varredura no banco, com p95 de atraso abaixo de 30 s. | liveness | conjectura |  |
 | **mongo-outage-fails-fast** | Com o banco pausado, a API responde em até 2,5 s (p99), com 503 em vez de pendurar, e volta sozinha. | performance | conjectura |  |
 | **poison-message-isolated** | Evento malformado vai para a fila de mortos depois de 3 tentativas e não trava a partição. | liveness | conjectura |  |
-| **psp-calls-bounded** | Chamadas ao agente de custódia têm prazo, disjuntor e retentativa com jitter. Com cauda lognormal, o p99 da API fica abaixo de 1 s. | performance | conjectura |  |
-| **rate-limit-protects-p99** | Na corrida de última hora, o limite GCRA mantém o p99 de envio de proposta abaixo de 500 ms para quem está dentro da cota. | performance | conjectura |  |
-| **reconciliation-converges** | Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos. | liveness | conjectura |  |
+| **psp-calls-bounded** | Com o agente de custódia em cauda lognormal e 30% de 503, o p99 da API fica abaixo de 1 s e os acordos ainda chegam à liberação. Prazo, disjuntor e retentativa com jitter seguram a cauda no worker. | performance | conjectura |  |
+| **rate-limit-protects-p99** | Na corrida de última hora, o p99 de envio de proposta fica abaixo de 500 ms, sem 5xx. | performance | conjectura |  |
+| **reconciliation-converges** | Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 30 s. | liveness | conjectura |  |
 
 ### Ressalvas
 
@@ -119,6 +119,7 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 - **exploration-exposes-new-sellers**: Monte Carlo com semente fixa prova o mecanismo, não o efeito no mercado. O risco segue exposto até haver medição com carga.
 - **single-award-per-intent**: A máquina de estados recusa a segunda adjudicação, a versão da intenção barra a escrita concorrente e o índice único em agreements.intent_id é o último piso.
 - **cache-early-refresh**: Dívida declarada. Hoje não há cache de reputação; ranking, perfil e fan-out buscam as avaliações no Mongo e recalculam a posterior. O cache entra quando a carga mostrar o gargalo, já com a expiração antecipada.
+- **rate-limit-protects-p99**: O limite GCRA é o mecanismo previsto, mas a carga não separa 429 de outros 4xx (lance depois do fechamento também é 4xx). Que ele atuou é inferência, não medição.
 
 ## Ontologia
 
