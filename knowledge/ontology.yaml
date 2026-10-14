@@ -42,6 +42,7 @@ concepts:
     category: role
     specializes: company
     definition: Instituição de pagamento autorizada que custodia o valor. A plataforma só comanda os gatilhos de liberação e estorno.
+    realized_by: [internal/psp.Server]
 
   - id: arbiter
     label: Árbitro
@@ -119,6 +120,7 @@ concepts:
     mediates: [buyer, seller, escrow-agent]
     founded_by: escrow-opened
     definition: Custódia terceirizada do valor que libera ao vendedor ou estorna ao comprador por gatilho da plataforma.
+    realized_by: [internal/app.Escrow]
 
   - id: dispute
     label: Disputa
@@ -246,6 +248,7 @@ concepts:
     category: datatype
     grounded_in: [bcb-brcode, emvco-qrcps-mpm]
     definition: Payload copia e cola com as instruções de pagamento do escrow.
+    realized_by: [internal/domain/agreement.Agreement.AttachEscrow]
 
   - id: event-record
     label: Registro de evento

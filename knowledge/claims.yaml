@@ -121,19 +121,27 @@ claims:
     statement: Nenhum caminho de código leva dinheiro para conta da plataforma. A porta do escrow só abre, libera e estorna.
     about: [escrow, escrow-agent]
     kind: regulatory
-    basis: conjecture
+    basis: by-construction
+    evidence:
+      - symbol: internal/app.Escrow
 
   - id: payment-institution-regulated
     statement: Custódia de recursos de terceiros exige instituição de pagamento autorizada pelo Banco Central.
     about: [escrow-agent]
     kind: regulatory
-    basis: conjecture
+    basis: testimony
+    review: pending
+    evidence:
+      - source: Lei nº 12.865/2013 (arranjos e instituições de pagamento do SPB) e regulamentação do BCB
 
   - id: escrow-command-idempotent
     statement: Comandos ao escrow carregam chave de idempotência. Repetir não duplica efeito.
     about: [escrow]
     kind: safety
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/integration.TestSettlementSagaAgainstSimulatedAgent
+      - test: internal/domain/agreement.TestHappyPathReleases
 
   - id: settlement-terminal-exclusive
     statement: Liberado, estornado e cancelado são terminais e exclusivos. Um acordo nunca libera e estorna.
@@ -150,6 +158,8 @@ claims:
     basis: example-tested
     evidence:
       - test: internal/domain/agreement.TestSettledIsIdempotentAndOrderAware
+      - test: internal/integration.TestSettlementSagaAgainstSimulatedAgent
+      - test: internal/adapter/escrow.TestSignatureRoundTripAndReplayWindow
 
   - id: reconciliation-converges
     statement: Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos.
@@ -317,7 +327,10 @@ claims:
     statement: Cada consumidor aplica um evento no máximo uma vez, com inbox único por consumidor e evento na mesma transação do efeito.
     about: [event-record, reputation]
     kind: integrity
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - symbol: internal/adapter/mongo.Store.Once
+      - test: internal/integration.TestRelayAtLeastOnceAndInboxEffectivelyOnce
 
   - id: backlog-drains
     statement: Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento.
