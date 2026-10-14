@@ -30,8 +30,10 @@ test: ## testes unitários
 test-race: ## testes com race detector, ordem aleatória e sem cache
 	@for m in $(MODULES); do (cd $$m && $(GO) test -race -shuffle=on -count=1 ./...) || exit 1; done
 
-test-integration: ## testes com containers reais (precisa de docker)
-	$(GO) test -tags=integration -count=1 -timeout=20m ./...
+test-integration: ## testes com containers reais (precisa de docker; colima funciona)
+	DOCKER_HOST=$${DOCKER_HOST:-$$(docker context inspect --format '{{.Endpoints.docker.Host}}')} \
+	TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=$${TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE:-/var/run/docker.sock} \
+	$(GO) test -tags=integration -count=1 -timeout=20m ./internal/integration/...
 
 cover: ## cobertura do módulo raiz
 	$(GO) test -coverprofile=coverage.out ./... && $(GO) tool cover -func=coverage.out | tail -1
