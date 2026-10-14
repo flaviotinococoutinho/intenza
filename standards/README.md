@@ -14,6 +14,13 @@ Cada norma entra numa cadeia: **autoridade → norma → edição → tipo de ar
 | ISO | ISO 639-1/639-2 (idiomas) | `iso/iso639` | lista de códigos |
 | UN | M49 (áreas estatísticas) | `un/m49` | classificação |
 | IBGE | DTB, unidades da federação | `ibge/uf` | lista de códigos |
+| GS1 | GTIN e GS1 Prefixes | `gs1/gtin` | identificador |
+| ISO | ISO 2108 (ISBN) | `iso/iso2108` | identificador |
+| ISO | ISO 3779/3780 (VIN, WMI) | `iso/iso3779` | identificador |
+| RFB | CPF | `rfb/cpf` | identificador |
+| RFB | CNPJ alfanumérico (IN RFB 2.229/2024) | `rfb/cnpj` | identificador |
+| SENATRAN | RENAVAM | `senatran/renavam` | identificador |
+| Correios | CEP → UF | `correios/cep` | mapa de faixas |
 
 | tipo de artefato | paradigma | estrutura |
 |---|---|---|
@@ -51,6 +58,20 @@ Cada pacote expõe `Spec()` com as fontes, a **fundamentação** da cópia (prim
 4. testes exaustivos fazem ida e volta por todas as chaves de todos os registros.
 
 A cadeia vale o elo mais fraco: `meta.Standard.Weakest()` diz qual é, e a base de conhecimento do projeto avisa quando uma fonte é reconstruída.
+
+## O que cada dígito verificador garante
+
+Saber o que um código **não** detecta também é conhecimento. Os testes enumeram tudo:
+
+| identificador | substituição de um caractere | troca de vizinhos | como a gente sabe |
+|---|---|---|---|
+| GTIN (mod 10, pesos 3/1) | todas | todas, exceto dígitos que diferem em 5 (05 ↔ 50) | prova exaustiva |
+| ISBN-10 (mod 11, pesos 10..1) | todas | todas | prova exaustiva |
+| VIN (mod 11, 49 CFR 565) | todas, exceto letras com a mesma transliteração (A e J valem 1) | — | prova exaustiva |
+| CPF (mod 11, resto 0/1 → 0) | ~99,8% | — | medido por amostragem |
+| CNPJ alfanumérico | mesma regra do CPF, valor = ASCII − 48 | — | coincide com a regra antiga em toda base numérica |
+
+O prefixo GS1 diz quem emitiu o GTIN, não onde o produto foi feito: a própria GS1 avisa.
 
 ## Atualizar uma norma
 
