@@ -26,6 +26,16 @@ jobs:
       - name: código gerado em dia
         run: make generate-check
 
+  integration:
+    name: integração (mongo + redis)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: make test-integration
+
   lint:
     name: lint (${{ matrix.module }})
     runs-on: ubuntu-latest
