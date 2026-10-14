@@ -37,6 +37,8 @@ type Deps struct {
 	MaxInFlight int
 	Log         *slog.Logger
 	OnLimit     func(scope string, degraded bool) // metrics hook
+	Back        app.Backoffice                    // optional: notifications
+	WebhookKey  []byte                            // escrow webhook HMAC secret
 	Wrap        func(http.Handler) http.Handler   // telemetry hook
 }
 
