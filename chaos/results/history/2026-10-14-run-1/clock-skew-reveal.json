@@ -1,0 +1,91 @@
+{
+  "experiment": {
+    "id": "clock-skew-reveal",
+    "title": "Relógio da API adiantado em uma hora",
+    "risk": "clock-skew",
+    "claims": [
+      "reveal-gated-by-persisted-close"
+    ],
+    "hypothesis": "Com o relógio da API adiantado em uma hora, a intenção aparece fechada para quem lê, mas o comprador continua sem ver preço.",
+    "cause": "O relógio local do nó da API é deslocado.",
+    "mechanism": "A leitura usa o relógio local para o estado efetivo; a abertura dos envelopes só olha o estado gravado, que só muda sob o relógio do banco.",
+    "expected_effect": "Exibição adiantada, preço selado.",
+    "steady_state": [
+      {
+        "name": "api viva",
+        "http": {
+          "url": "http://localhost:8080/healthz",
+          "status": 204
+        }
+      }
+    ],
+    "method": [
+      {
+        "fault": {
+          "service": "api",
+          "set": {
+            "clock_skew": "PT1H"
+          }
+        }
+      },
+      {
+        "probe": {
+          "name": "preço continua selado",
+          "scenario": "sealed-under-skew",
+          "min": 1
+        }
+      }
+    ],
+    "rollback": [
+      {
+        "fault": {
+          "service": "api",
+          "set": {
+            "clock_skew": "PT0S"
+          }
+        }
+      }
+    ],
+    "verify": []
+  },
+  "started_at": "2026-10-14T08:06:03.150057855Z",
+  "finished_at": "2026-10-14T08:06:03.173760566Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:06:03.151987386Z",
+      "phase": "steady",
+      "what": "api viva",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:06:03.153770642Z",
+      "phase": "method",
+      "what": "falha api map[clock_skew:PT1H]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:06:03.173352463Z",
+      "phase": "method",
+      "what": "probe preço continua selado",
+      "ok": false,
+      "detail": "o relógio não estava adiantado (efetivo \"expired\"): sonda inválida"
+    },
+    {
+      "at": "2026-10-14T08:06:03.173749075Z",
+      "phase": "rollback",
+      "what": "falha api map[clock_skew:PT0S]",
+      "ok": true
+    }
+  ],
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "clock-skew-reveal",
+  "verdict": "falsified"
+}
