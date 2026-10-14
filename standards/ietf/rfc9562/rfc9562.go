@@ -169,3 +169,17 @@ func Spec() meta.Standard {
 		},
 	}
 }
+
+// FromHash builds a version 8 UUID (RFC 9562 section 5.8, custom) from the
+// first 16 bytes of a hash: the same input always yields the same id, which
+// turns a client's idempotency key into a natural primary key.
+func FromHash(sum []byte) (UUID, error) {
+	var u UUID
+	if len(sum) < 16 {
+		return u, ErrSyntax
+	}
+	copy(u[:], sum[:16])
+	u[6] = 0x80 | u[6]&0x0F // version 8
+	u[8] = 0x80 | u[8]&0x3F // variant 10
+	return u, nil
+}
