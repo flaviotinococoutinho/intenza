@@ -191,6 +191,7 @@ func agreementDoc(a agreement.Agreement) (bson.D, error) {
 		{Key: "seller_id", Value: a.Terms.SellerID},
 		{Key: "escrow_id", Value: a.EscrowID},
 		{Key: "fund_by", Value: a.FundBy},
+		{Key: "updated_at", Value: time.Now()},
 		{Key: "body", Value: b},
 	}
 	if a.InspectUntil != nil {
@@ -230,7 +231,16 @@ func (t *tx) InsertParty(ctx context.Context, p app.Party) error {
 	if err != nil {
 		return err
 	}
-	return t.insert(ctx, cParties, bson.D{{Key: "_id", Value: p.ID}, {Key: "document", Value: p.Document}, {Key: "body", Value: b}})
+	creds := make([]string, len(p.Credentials))
+	for i, c := range p.Credentials {
+		creds[i] = string(c)
+	}
+	return t.insert(ctx, cParties, bson.D{
+		{Key: "_id", Value: p.ID},
+		{Key: "document", Value: p.Document},
+		{Key: "credentials", Value: creds},
+		{Key: "body", Value: b},
+	})
 }
 
 func (t *tx) RatingPair(ctx context.Context, agreementID string) (reputation.Pair, error) {
