@@ -370,6 +370,7 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | `internal/platform/config` | casca imperativa | não |
 | `internal/platform/ids` | casca imperativa | não |
 | `internal/platform/logx` | casca imperativa | não |
+| `internal/platform/telemetry` | casca imperativa | não |
 | `internal/psp` | casca imperativa | não |
 | `internal/relay` | CSP | não |
 | `internal/wiring` | casca imperativa | não |
