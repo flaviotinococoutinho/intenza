@@ -94,7 +94,7 @@ risks:
     effect: Receptação, risco à segurança viária e sanção.
     severity: 5
     likelihood: 2
-    mitigated_by: [autoparts-restricted-by-design, identifiers-check-digit-validated]
+    mitigated_by: [autoparts-restricted-by-design, identifiers-check-digit-validated, dismantling-law]
 
   - id: he-said-she-said
     title: Disputa sem base objetiva
