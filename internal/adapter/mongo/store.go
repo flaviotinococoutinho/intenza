@@ -83,8 +83,15 @@ func (s *Store) ensureIndexes(ctx context.Context) error {
 		},
 		cAgreements: {
 			{Keys: bson.D{{Key: "intent_id", Value: 1}}, Options: options.Index().SetUnique(true)},
+			{Keys: bson.D{{Key: "status", Value: 1}, {Key: "updated_at", Value: 1}}},
 			{Keys: bson.D{{Key: "status", Value: 1}, {Key: "fund_by", Value: 1}}},
 			{Keys: bson.D{{Key: "status", Value: 1}, {Key: "inspect_until", Value: 1}}},
+		},
+		cParties: {
+			{Keys: bson.D{{Key: "credentials", Value: 1}}},
+		},
+		"notifications": {
+			{Keys: bson.D{{Key: "party_id", Value: 1}, {Key: "created_at", Value: -1}}},
 		},
 		cRatings: {
 			{Keys: bson.D{{Key: "agreement_id", Value: 1}, {Key: "rater_id", Value: 1}}, Options: options.Index().SetUnique(true)},

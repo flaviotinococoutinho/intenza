@@ -29,6 +29,7 @@ linters:
     gosec:
       excludes:
         - G115 # conversões de inteiro: tabelas estáticas checam faixa na geração
+        - G404 # aleatoriedade estatística (jitter, amostragem, simulação) é semeada de propósito; cripto usa crypto/rand
     gocritic:
       disabled-checks:
         - ifElseChain

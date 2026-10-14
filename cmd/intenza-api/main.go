@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -16,17 +15,11 @@ import (
 
 	"github.com/flaviotinococoutinho/intenza/internal/adapter/httpapi"
 	"github.com/flaviotinococoutinho/intenza/internal/adapter/mongo"
-	"github.com/flaviotinococoutinho/intenza/internal/adapter/redis"
-	"github.com/flaviotinococoutinho/intenza/internal/app"
-	"github.com/flaviotinococoutinho/intenza/internal/domain/agreement"
-	"github.com/flaviotinococoutinho/intenza/internal/domain/intent"
-	"github.com/flaviotinococoutinho/intenza/internal/domain/proposal"
-	"github.com/flaviotinococoutinho/intenza/internal/domain/taxonomy"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/admin"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/clock"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/config"
-	"github.com/flaviotinococoutinho/intenza/internal/platform/ids"
 	"github.com/flaviotinococoutinho/intenza/internal/platform/logx"
+	"github.com/flaviotinococoutinho/intenza/internal/wiring"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso8601"
 )
 
@@ -52,11 +45,14 @@ func run(log *slog.Logger) error {
 	}
 	defer store.Close(context.WithoutCancel(ctx))
 
-	market, rdb, err := build(cfg, store, log)
+	market, rdb, err := wiring.Market(cfg, store, log)
 	if err != nil {
 		return err
 	}
-	deps := httpapi.Deps{Market: market, JWTSecret: []byte(cfg.JWTSecret), DevAuth: cfg.DevAuth, MaxInFlight: 512, Log: log}
+	deps := httpapi.Deps{
+		Market: market, JWTSecret: []byte(cfg.JWTSecret), DevAuth: cfg.DevAuth, MaxInFlight: 512, Log: log,
+		Back: store, WebhookKey: []byte(cfg.WebhookSecret),
+	}
 	checks := []admin.Check{{Name: "mongo", Fn: store.Ping}}
 	if rdb != nil {
 		deps.Limiter = rdb
@@ -85,34 +81,6 @@ func run(log *slog.Logger) error {
 		})
 	}
 	return serve(ctx, log, cfg, httpapi.New(deps), adm.Mux)
-}
-
-func build(cfg config.Config, store *mongo.Store, log *slog.Logger) (*app.Market, *redis.Client, error) {
-	keys, err := cfg.Keys()
-	if err != nil {
-		return nil, nil, err
-	}
-	sealer, err := proposal.NewSealer(keys, cfg.SealKeyCurrent, rand.Reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	minW, maxW, sel, fund, insp, err := cfg.Durations()
-	if err != nil {
-		return nil, nil, err
-	}
-	m := &app.Market{
-		Store: store, IDs: ids.New(), Clock: &clock.System{}, Sealer: sealer, Tree: taxonomy.Default,
-		Intents:    intent.Policy{MinWindow: minW, MaxWindow: maxW, SelectionWindow: sel, ActiveWave: cfg.ActiveWave},
-		Settlement: agreement.Policy{FundingWindow: fund, InspectionWindow: insp},
-		RatingDays: cfg.RatingDays, Log: log,
-	}
-	rdb, err := redis.Connect(cfg.RedisAddr, cfg.RedisTimeout)
-	if err != nil {
-		log.Warn("redis indisponível na partida: limites locais e prazos pela varredura", "err", err)
-		return m, nil, nil
-	}
-	m.Scheduler = rdb
-	return m, rdb, nil
 }
 
 func serve(ctx context.Context, log *slog.Logger, cfg config.Config, public, adm http.Handler) error {

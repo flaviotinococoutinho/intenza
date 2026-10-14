@@ -2,11 +2,13 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/flaviotinococoutinho/intenza/internal/adapter/escrow"
 	"github.com/flaviotinococoutinho/intenza/internal/app"
 	"github.com/flaviotinococoutinho/intenza/internal/domain/agreement"
 	"github.com/flaviotinococoutinho/intenza/internal/domain/intent"
@@ -467,9 +469,66 @@ func (s *server) routes(api huma.API) {
 			return &body[map[reputation.Role]reputation.Score]{r}, nil
 		})
 
+	huma.Register(api, huma.Operation{
+		OperationID: "notifications", Method: http.MethodGet, Path: "/v1/notifications", Tags: []string{"intenções"},
+		Summary: "Intenções que o fan-out escolheu mostrar a esta parte", Security: bearer,
+	},
+		func(ctx context.Context, _ *struct{}) (*body[[]app.Notification], error) {
+			party, err := requireParty(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if s.d.Back == nil {
+				return &body[[]app.Notification]{}, nil
+			}
+			ns, err := s.d.Back.Notifications(ctx, party, 50)
+			if err != nil {
+				return nil, s.problem(ctx, err)
+			}
+			return &body[[]app.Notification]{ns}, nil
+		})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "escrow-webhook", Method: http.MethodPost, Path: "/v1/webhooks/escrow", Tags: []string{"liquidação"},
+		Summary: "Confirmações do agente de custódia (HMAC-SHA256, janela de 5 min)", DefaultStatus: http.StatusNoContent,
+	},
+		func(ctx context.Context, in *webhookInput) (*struct{}, error) {
+			if err := escrow.Verify(s.d.WebhookKey, in.Signature, in.RawBody, time.Now(), 5*time.Minute); err != nil {
+				return nil, huma.Error401Unauthorized(err.Error())
+			}
+			var hook struct {
+				Type      string `json:"type"`
+				EscrowID  string `json:"escrow_id"`
+				Reference string `json:"reference"`
+			}
+			if err := json.Unmarshal(in.RawBody, &hook); err != nil {
+				return nil, huma.Error400BadRequest("corpo inválido")
+			}
+			var err error
+			switch hook.Type {
+			case "escrow.held":
+				_, err = s.d.Market.Funded(ctx, hook.Reference, hook.EscrowID)
+			case "escrow.released":
+				_, err = s.d.Market.Settle(ctx, hook.Reference, true)
+			case "escrow.refunded":
+				_, err = s.d.Market.Settle(ctx, hook.Reference, false)
+			default:
+				return &struct{}{}, nil // unknown types are acknowledged and ignored
+			}
+			if err != nil {
+				return nil, s.problem(ctx, err)
+			}
+			return &struct{}{}, nil
+		})
+
 	if s.d.DevAuth {
 		s.devRoutes(api)
 	}
+}
+
+type webhookInput struct {
+	Signature string `header:"Intenza-Signature" required:"true"`
+	RawBody   []byte
 }
 
 type registerInput struct {
