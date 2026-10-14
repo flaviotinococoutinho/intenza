@@ -10,15 +10,16 @@ load: {rate: 0.4, sellers: 6, propose_p: 0.6, window: PT12S, snipe: 3s, duration
 steady_state:
   - {name: api viva, http: {url: "http://localhost:8080/healthz", status: 204}}
 method:
-  - fault: {service: psp, set: {auto_pay_after: 2s, webhook_drop: "1"}}
+  - fault: {service: psp, set: {webhook_drop: "1"}}
   - wait: 60s
   - fault: {service: psp, set: {webhook_drop: "0", webhook_dup: "1"}}
   - wait: 20s
 rollback:
-  - fault: {service: psp, set: {auto_pay_after: 0s, webhook_drop: "0", webhook_dup: "0"}}
+  - fault: {service: psp, set: {webhook_drop: "0", webhook_dup: "0"}}
 settle: 120s
 verify:
   - name: nenhum acordo preso esperando o agente
-    mongo: {collection: agreements, filter: '{"status": {"$in": ["awaiting-funding", "releasing", "refunding"]}, "escrow_id": {"$ne": ""}}'}
+    # waiting on the agent for more than 30 s by the database clock; younger ones are still in flight
+    mongo: {collection: agreements, filter: '{"status": {"$in": ["awaiting-funding", "releasing", "refunding"]}, "escrow_id": {"$ne": ""}, "$expr": {"$lt": ["$updated_at", {"$subtract": ["$$NOW", 30000]}]}}'}
     max: 0
   - {name: liberações aconteceram, load: {op: released, stat: count}, min: 1}

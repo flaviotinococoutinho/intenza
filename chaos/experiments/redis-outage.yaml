@@ -24,7 +24,7 @@ verify:
     promql: {query: 'histogram_quantile(0.95, sum by (le) (rate(intenza_deadline_lateness_seconds_bucket{kind="intent-close"}[4m])))'}
     max: 30
   - name: a varredura assumiu fechamentos
-    promql: {query: 'sum(increase(intenza_deadline_lateness_seconds_count{source="sweep"}[4m]))'}
+    promql: {query: 'sum(intenza_deadline_lateness_seconds_count{source="sweep"})', delta: true}
     min: 1
   - {name: publicação sem 5xx, load: {op: publish, stat: error_ratio}, max: 0.01}
   - {name: propostas sem 5xx, load: {op: propose, stat: error_ratio}, max: 0.01}

@@ -11,18 +11,17 @@ steady_state:
   - {name: api viva, http: {url: "http://localhost:8080/healthz", status: 204}}
   - {name: agente vivo, http: {url: "http://localhost:9094/healthz", status: 204}}
 method:
-  - fault: {service: psp, set: {auto_pay_after: 2s}}
   - wait: 10s
   - fault: {service: psp, set: {latency_median: 800ms, latency_sigma: "1", error_rate: "0.3"}}
   - wait: 60s
   - fault: {service: psp, set: {latency_median: 0s, latency_sigma: "0", error_rate: "0"}}
 rollback:
-  - fault: {service: psp, set: {latency_median: 0s, latency_sigma: "0", error_rate: "0", auto_pay_after: 0s}}
+  - fault: {service: psp, set: {latency_median: 0s, latency_sigma: "0", error_rate: "0"}}
 settle: 30s
 verify:
   - {name: p99 de publicação abaixo de 1 s, load: {op: publish, stat: p99}, max: 1}
   - {name: p99 de proposta abaixo de 1 s, load: {op: propose, stat: p99}, max: 1}
   - name: o worker sentiu a falha
-    promql: {query: 'sum(increase(intenza_escrow_calls_total{result!="ok"}[5m]))'}
+    promql: {query: 'sum(intenza_escrow_calls_total{result!="ok"})', delta: true}
     min: 1
   - {name: acordos liberados apesar da cauda, load: {op: released, stat: count}, min: 1}

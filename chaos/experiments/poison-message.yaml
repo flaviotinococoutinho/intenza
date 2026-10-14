@@ -10,17 +10,15 @@ load: {rate: 0.4, sellers: 6, propose_p: 0.6, window: PT12S, snipe: 3s, duration
 steady_state:
   - {name: worker vivo, http: {url: "http://localhost:9093/healthz", status: 204}}
 method:
-  - fault: {service: psp, set: {auto_pay_after: 2s}}
   - wait: 5s
   - insert:
       collection: outbox
       document: '{"_id": "poison-0001", "type": "intenza.agreement.formed.v1", "subject": "acordo-que-nao-existe", "time": {"$date": "2026-01-01T00:00:00Z"}, "data": "{}", "traceparent": "", "published": false}'
   - wait: 40s
-rollback:
-  - fault: {service: psp, set: {auto_pay_after: 0s}}
+rollback: []
 settle: 30s
 verify:
   - name: o evento foi para a DLQ
-    promql: {query: 'sum(increase(intenza_consumer_events_total{group="settlement",result="dead-lettered"}[5m]))'}
+    promql: {query: 'sum(intenza_consumer_events_total{group="settlement",result="dead-lettered"})', delta: true}
     min: 1
   - {name: acordos novos seguiram liberando, load: {op: released, stat: count}, min: 1}
