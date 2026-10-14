@@ -26,14 +26,14 @@ func (f *fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls = append(f.calls, r.Method+" "+r.URL.Path)
-	switch {
-	case r.URL.Path == "/healthz":
+	switch r.URL.Path {
+	case "/healthz":
 		if f.healthy {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		w.WriteHeader(http.StatusServiceUnavailable)
-	case r.URL.Path == "/api/v1/query":
+	case "/api/v1/query":
 		_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"result": []any{map[string]any{"value": []any{1, f.metric}}}}})
 	default:
 		w.WriteHeader(http.StatusNoContent)
@@ -43,8 +43,10 @@ func (f *fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func runner(t *testing.T, f *fake) *Runner {
 	srv := httptest.NewServer(f)
 	t.Cleanup(srv.Close)
-	r, err := NewRunner(context.Background(), Env{API: srv.URL, Prometheus: srv.URL, Toxiproxy: srv.URL,
-		Admin: map[string]string{"psp": srv.URL}, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	r, err := NewRunner(context.Background(), Env{
+		API: srv.URL, Prometheus: srv.URL, Toxiproxy: srv.URL,
+		Admin: map[string]string{"psp": srv.URL}, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,8 +93,10 @@ func TestVerdicts(t *testing.T) {
 
 func TestJournalFiles(t *testing.T) {
 	dir := t.TempDir()
-	j := Journal{Experiment: Experiment{ID: "demo", Title: "Demo", Hypothesis: "h", Risk: "r"}, Verdict: "held",
-		Records: []Record{{Phase: "verify", What: "p", OK: true, Value: f64(0.2)}}}
+	j := Journal{
+		Experiment: Experiment{ID: "demo", Title: "Demo", Hypothesis: "h", Risk: "r"}, Verdict: "held",
+		Records: []Record{{Phase: "verify", What: "p", OK: true, Value: f64(0.2)}},
+	}
 	if err := Write(dir, j); err != nil {
 		t.Fatal(err)
 	}
