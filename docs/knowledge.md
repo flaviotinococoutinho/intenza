@@ -10,15 +10,15 @@ A priori vale para toda entrada no escopo (conhecimento determinístico). A post
 
 | base | modo | força | alegações |
 |---|---|---:|---:|
-| por construção | a priori | 7 | 2 |
+| por construção | a priori | 7 | 4 |
 | prova exaustiva | a priori | 6 | 4 |
 | teste de propriedade | a priori | 5 | 5 |
-| teste de exemplo | a priori | 4 | 17 |
+| teste de exemplo | a priori | 4 | 19 |
 | medido | a posteriori | 3 | 0 |
 | testemunho | testemunhal | 2 | 2 |
-| conjectura | sem justificativa | 1 | 16 |
+| conjectura | sem justificativa | 1 | 12 |
 
-Dívida epistêmica: **16 de 46** alegações ainda são conjecturas.
+Dívida epistêmica: **12 de 46** alegações ainda são conjecturas.
 
 ## Riscos
 
@@ -31,7 +31,7 @@ Cada risco é uma cadeia causa → mecanismo → efeito. A solução é determin
 | **aleatória** | clock-skew, double-award, double-settlement, duplicate-intent, duplicate-processing, invalid-identifier, late-bid, lost-event | cache-stampede, database-outage, deadline-herd, psp-latency-tail | broker-outage, redis-outage, webhook-loss |
 | **epistêmica** | autoparts-regulatory, biased-ranking, bid-leak, forbidden-category, funds-custody, he-said-she-said, retaliation | cold-start-seller | poison-message |
 
-Mitigados com a evidência certa para a natureza da solução: **9 de 24**.
+Mitigados com a evidência certa para a natureza da solução: **13 de 24**.
 
 | risco | S×P | causa → mecanismo → efeito | solução | status | mitigado por | experimentos |
 |---|---:|---|---|---|---|---|
@@ -41,15 +41,15 @@ Mitigados com a evidência certa para a natureza da solução: **9 de 24**.
 | **psp-latency-tail**<br>Cauda de latência do agente de custódia | 16 | Agente externo com latência lognormal e picos. → Chamadas presas seguram conexões e goroutines e a fila cresce. → Latência da API sobe para todo mundo, não só para quem paga. | estocástica | exposto | psp-calls-bounded |  |
 | **bid-leak**<br>Vazamento de preço selado | 15 | Caminho não previsto expõe o preço (log, evento, dump, consulta ampla, revelação antecipada). → Concorrente ou comprador vê preços antes do fechamento e passa a ancorar ou combinar. → A proposta selada vira leilão aberto disfarçado e os melhores vendedores saem. | determinística | mitigado | sealed-price-encrypted-at-rest, reveal-gated-by-persisted-close, events-carry-no-price |  |
 | **double-settlement**<br>Liberação ou estorno disparado duas vezes, ou os dois | 15 | Evento redelivery, webhook duplicado ou retentativa após timeout. → O comando ao agente de custódia é reenviado sem chave ou o estado não é terminal. → Dinheiro liberado e estornado, ou liberado duas vezes. | determinística | mitigado | escrow-command-idempotent, settlement-terminal-exclusive, webhook-handling-idempotent |  |
-| **late-bid**<br>Proposta aceita depois do prazo | 12 | Envio e fechamento correm no mesmo instante. → A checagem de prazo e a gravação acontecem em momentos diferentes. → Vendedor que viu o fechamento chegando entra depois e quebra a isonomia. | determinística | exposto | no-bid-after-close |  |
+| **late-bid**<br>Proposta aceita depois do prazo | 12 | Envio e fechamento correm no mesmo instante. → A checagem de prazo e a gravação acontecem em momentos diferentes. → Vendedor que viu o fechamento chegando entra depois e quebra a isonomia. | determinística | mitigado | no-bid-after-close |  |
 | **invalid-identifier**<br>Identificador digitado errado vira prova falsa | 12 | Erro de digitação em GTIN, VIN, ISBN ou documento. → O campo probatório guarda um identificador que não existe. → Contrato aponta para outro item ou para ninguém. | determinística | mitigado | identifiers-check-digit-validated |  |
-| **lost-event**<br>Evento perdido entre banco e broker | 12 | Escrita dupla em banco e broker sem transação comum. → O processo cai depois de gravar o estado e antes de publicar. → Projeções e sagas nunca ficam sabendo da mudança. | determinística | exposto | outbox-atomic-with-state |  |
-| **duplicate-intent**<br>Retentativa do cliente cria intenção duplicada | 12 | Timeout no cliente depois que o servidor já gravou. → O mesmo pedido chega duas vezes. → Duas intenções iguais e vendedores respondendo em dobro. | determinística | exposto | intent-creation-idempotent |  |
+| **lost-event**<br>Evento perdido entre banco e broker | 12 | Escrita dupla em banco e broker sem transação comum. → O processo cai depois de gravar o estado e antes de publicar. → Projeções e sagas nunca ficam sabendo da mudança. | determinística | mitigado | outbox-atomic-with-state |  |
+| **duplicate-intent**<br>Retentativa do cliente cria intenção duplicada | 12 | Timeout no cliente depois que o servidor já gravou. → O mesmo pedido chega duas vezes. → Duas intenções iguais e vendedores respondendo em dobro. | determinística | mitigado | intent-creation-idempotent |  |
 | **broker-outage**<br>Broker indisponível | 12 | Broker cai, pausa ou perde a rede. → O relay não publica e o outbox acumula. → Projeções e sagas atrasam, mas a escrita continua aceitando. | híbrida | exposto | outbox-atomic-with-state, backlog-drains |  |
 | **redis-outage**<br>Redis indisponível | 12 | Redis cai, pausa ou fica lento. → Idempotência rápida, limite de taxa, prazos e cache perdem o apoio. → Duplicata, rajada sem limite ou fechamento atrasado se não houver degradação planejada. | híbrida | exposto | intent-creation-idempotent, deadlines-survive-redis-loss |  |
 | **deadline-herd**<br>Rajada de última hora no fechamento | 12 | Vendedores deixam para o fim e muitos prazos vencem juntos. → A taxa de chegada cresce perto do prazo e os fechamentos se acumulam. → Latência sobe exatamente quando importa e propostas perdem o prazo. | estocástica | exposto | rate-limit-protects-p99 |  |
 | **cold-start-seller**<br>Vendedor novo nunca vence | 12 | Sem histórico, a reputação é desconhecida. → Ordenação por reputação pontual favorece sempre quem já vende. → Concentração de mercado e oferta estagnada. | estocástica | exposto | reputation-shrinks-small-samples, exploration-exposes-new-sellers |  |
-| **double-award**<br>Duas propostas escolhidas para a mesma intenção | 10 | Clique duplo, retentativa do cliente ou duas abas. → Duas seleções leem a intenção aberta e gravam em paralelo. → Dois acordos e dois escrows para um item só. | determinística | exposto | single-award-per-intent |  |
+| **double-award**<br>Duas propostas escolhidas para a mesma intenção | 10 | Clique duplo, retentativa do cliente ou duas abas. → Duas seleções leem a intenção aberta e gravam em paralelo. → Dois acordos e dois escrows para um item só. | determinística | mitigado | single-award-per-intent |  |
 | **forbidden-category**<br>Anúncio em categoria proibida | 10 | Erro de curadoria ou categoria genérica demais. → Intenção é publicada num nó que admite item proibido. → Venda de arma, medicamento ou animal pela plataforma. | determinística | mitigado | forbidden-categories-unrepresentable |  |
 | **autoparts-regulatory**<br>Peça de desmonte sem rastreabilidade ou item de segurança | 10 | Autopeças concentram a maior densidade regulatória. → Vendedor sem credencial ou peça sem etiqueta entra na árvore. → Receptação, risco à segurança viária e sanção. | determinística | mitigado | autoparts-restricted-by-design, identifiers-check-digit-validated, dismantling-law |  |
 | **retaliation**<br>Avaliação retaliatória | 9 | Uma parte vê a avaliação da outra antes de avaliar. → Nota baixa provoca nota baixa de volta. → Reputação vira negociação e perde sinal. | determinística | mitigado | ratings-double-blind |  |
@@ -65,6 +65,8 @@ Mitigados com a evidência certa para a natureza da solução: **9 de 24**.
 | alegação | enunciado | tipo | base | evidência |
 |---|---|---|---|---|
 | **forbidden-categories-unrepresentable** | Categorias proibidas (armas, medicamentos, animais, tabaco, álcool) não existem na árvore, e um identificador de categoria só nasce de um nó dela. | safety | por construção | símbolo `internal/domain/taxonomy.Tree.Lookup`<br>teste `internal/domain/taxonomy.TestForbiddenCategoriesDoNotExist`<br>teste `internal/domain/taxonomy.TestLoaderRefusesForbiddenAnchorsAndTerms` |
+| **intent-creation-idempotent** | Repetir a criação de intenção com a mesma Idempotency-Key devolve a mesma intenção, com ou sem Redis. | safety | por construção | símbolo `internal/app.Market.PublishIntent`<br>teste `internal/integration.TestEndToEndMarket` |
+| **no-bid-after-close** | Nenhuma proposta é aceita depois do fechamento, nem em corrida com o fechador. | safety | por construção | símbolo `internal/adapter/mongo.guardFilter`<br>teste `internal/domain/intent.TestNoProposalAtOrAfterTheDeadline`<br>teste `internal/integration.TestNoProposalAfterCloseUnderRace` |
 | **reveal-gated-by-persisted-close** | O preço só abre depois que a intenção foi fechada no banco, sob o relógio do banco. Relógio local adiantado não antecipa a revelação. | safety | por construção | símbolo `internal/domain/proposal.Reveal`<br>teste `internal/domain/proposal.TestRevealIgnoresTheLocalClock` |
 | **check-digits-catch-single-substitutions** | GTIN, ISBN-10 e VIN detectam toda substituição de um caractere. No VIN, a exceção são letras com a mesma transliteração (A e J valem 1). | integrity | prova exaustiva | teste `standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown`<br>teste `standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition`<br>teste `standards/iso/iso3779.TestEverySubstitutionChangesTheCheckOrCollidesInTransliteration` |
 | **gtin-misses-transpositions-by-five** | O dígito do GTIN não detecta troca de vizinhos que diferem em 5 (05 por 50). O ISBN-10 detecta toda troca de vizinhos. | integrity | prova exaustiva | teste `standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown`<br>teste `standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition` |
@@ -87,8 +89,10 @@ Mitigados com a evidência certa para a natureza da solução: **9 de 24**.
 | **jcs-reproduces-rfc-vectors** | A canonicalização reproduz byte a byte as amostras do RFC 8785, inclusive a ordem por unidades UTF-16, e recusa nomes duplicados. | integrity | teste de exemplo | teste `standards/ietf/rfc8785.TestNumberSamplesFromAppendixB`<br>teste `standards/ietf/rfc8785.TestSampleFromSection3`<br>teste `standards/ietf/rfc8785.TestPropertySortingByUTF16`<br>teste `standards/ietf/rfc8785.TestRejectsDuplicatesAndTrailingData` |
 | **normative-lookups-allocation-free** | Consultas por código nas normas são O(1) e não alocam memória. | performance | teste de exemplo | teste `standards/iso/iso4217.TestLookupsDoNotAllocate`<br>teste `standards/iso/iso3166.TestLookupsDoNotAllocate`<br>bench `standards/iso/iso4217.BenchmarkByAlpha` |
 | **normative-tables-match-extracts** | As tabelas compiladas das normas vêm dos extratos versionados. O sha256 do extrato vai no código gerado e um teste confere. | integrity | teste de exemplo | teste `standards/iso/iso4217.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso3166.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso639.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso18245.TestGeneratedTablesMatchExtract`<br>teste `standards/un/m49.TestGeneratedTablesMatchExtract` |
+| **outbox-atomic-with-state** | Mudança de estado e evento são gravados na mesma transação. Não existe estado sem evento nem evento sem estado. | integrity | teste de exemplo | teste `internal/integration.TestOutboxIsAtomicWithState`<br>teste `internal/integration.TestEndToEndMarket` |
 | **ratings-double-blind** | As avaliações só aparecem quando as duas partes avaliaram ou o prazo venceu. | economic | teste de exemplo | teste `internal/domain/reputation.TestDoubleBlindReveal` |
 | **sealed-price-encrypted-at-rest** | O preço da proposta é gravado cifrado com AES-256-GCM, chave derivada por intenção (HKDF) e dados associados que amarram proposta, vendedor e intenção. | integrity | teste de exemplo | teste `internal/domain/proposal.TestSealedPriceIsBoundToItsProposal`<br>teste `internal/domain/proposal.TestKeyRotationKeepsOldPricesReadable` |
+| **single-award-per-intent** | Uma intenção gera no máximo um acordo. | safety | teste de exemplo | teste `internal/domain/intent.TestLifecycle`<br>teste `internal/integration.TestSingleAwardUnderRace` |
 | **terms-snapshot-tamper-evident** | Os termos do acordo são congelados em JSON canônico e o SHA-256 vai junto. Qualquer alteração muda o hash. | integrity | teste de exemplo | símbolo `internal/domain/agreement.Agreement.VerifyTerms`<br>teste `internal/domain/agreement.TestTermsHashDetectsTampering` |
 | **uuid-v7-strictly-increasing** | Os IDs v7 crescem estritamente mesmo com relógio parado, voltando no tempo ou estourando o contador do milissegundo. | integrity | teste de exemplo | teste `standards/ietf/rfc9562.TestMonotonicUnderAdversarialClocks` |
 | **webhook-handling-idempotent** | Webhook duplicado ou fora de ordem não muda o resultado. A máquina de estados recusa transição inválida e o evento é deduplicado. | safety | teste de exemplo | teste `internal/domain/agreement.TestSettledIsIdempotentAndOrderAware` |
@@ -99,17 +103,13 @@ Mitigados com a evidência certa para a natureza da solução: **9 de 24**.
 | **consumers-effectively-once** | Cada consumidor aplica um evento no máximo uma vez, com inbox único por consumidor e evento na mesma transação do efeito. | integrity | conjectura |  |
 | **deadlines-survive-redis-loss** | Sem Redis, os fechamentos acontecem pela varredura no banco com atraso abaixo de 30 s. | liveness | conjectura |  |
 | **escrow-command-idempotent** | Comandos ao escrow carregam chave de idempotência. Repetir não duplica efeito. | safety | conjectura |  |
-| **intent-creation-idempotent** | Repetir a criação de intenção com a mesma Idempotency-Key devolve a mesma intenção, com ou sem Redis. | safety | conjectura |  |
 | **mongo-outage-fails-fast** | Com o banco pausado, a API responde 503 em menos de 2 s em vez de pendurar, e volta sozinha. | performance | conjectura |  |
-| **no-bid-after-close** | Nenhuma proposta é aceita depois do fechamento, nem em corrida com o fechador. | safety | conjectura |  |
-| **outbox-atomic-with-state** | Mudança de estado e evento são gravados na mesma transação. Não existe estado sem evento nem evento sem estado. | integrity | conjectura |  |
 | **payment-institution-regulated** | Custódia de recursos de terceiros exige instituição de pagamento autorizada pelo Banco Central. | regulatory | conjectura |  |
 | **platform-never-holds-funds** | Nenhum caminho de código leva dinheiro para conta da plataforma. A porta do escrow só abre, libera e estorna. | regulatory | conjectura |  |
 | **poison-message-isolated** | Evento malformado vai para a fila de mortos depois de 3 tentativas e não trava a partição. | liveness | conjectura |  |
 | **psp-calls-bounded** | Chamadas ao agente de custódia têm prazo, disjuntor e retentativa com jitter. Com cauda lognormal, o p99 da API fica abaixo de 1 s. | performance | conjectura |  |
 | **rate-limit-protects-p99** | Na corrida de última hora, o limite GCRA mantém o p99 de envio de proposta abaixo de 500 ms para quem está dentro da cota. | performance | conjectura |  |
 | **reconciliation-converges** | Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos. | liveness | conjectura |  |
-| **single-award-per-intent** | Uma intenção gera no máximo um acordo. | safety | conjectura |  |
 
 ## Ontologia
 
@@ -171,7 +171,7 @@ flowchart LR
 
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
-| **Parte**<br>`party` | Pessoa ou organização identificável que transaciona. Dá a identidade que comprador e vendedor emprestam. |  |  |  |
+| **Parte**<br>`party` | Pessoa ou organização identificável que transaciona. Dá a identidade que comprador e vendedor emprestam. |  |  | `internal/app.Party` |
 | **Item**<br>`item` | Objeto físico negociado. É ele que carrega os atributos conferidos na entrega e na disputa. |  |  |  |
 
 ### subkind — especialização rígida de um tipo
@@ -340,7 +340,12 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 
 | pacote | paradigma | puro |
 |---|---|---|
+| `cmd/intenza-api` | casca imperativa | não |
 | `cmd/intenza-kb` | casca imperativa | não |
+| `internal/adapter/httpapi` | casca imperativa | não |
+| `internal/adapter/mongo` | casca imperativa | não |
+| `internal/adapter/redis` | casca imperativa | não |
+| `internal/app` | casca imperativa | não |
 | `internal/domain/agreement` | núcleo funcional | sim |
 | `internal/domain/event` | núcleo funcional | sim |
 | `internal/domain/fsm` | autômatos | sim |
@@ -354,7 +359,12 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | `internal/domain/taxonomy` | núcleo funcional | sim |
 | `internal/kb` | núcleo funcional | sim |
 | `internal/kb/source` | casca imperativa | não |
+| `internal/platform/admin` | casca imperativa | não |
 | `internal/platform/buildinfo` | casca imperativa | não |
+| `internal/platform/clock` | casca imperativa | não |
+| `internal/platform/config` | casca imperativa | não |
+| `internal/platform/ids` | casca imperativa | não |
+| `internal/platform/logx` | casca imperativa | não |
 | `standards` | núcleo funcional | sim |
 | `standards/bcb/brcode` | núcleo funcional | sim |
 | `standards/correios/cep` | orientado a dados | sim |
