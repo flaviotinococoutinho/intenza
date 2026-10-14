@@ -1,0 +1,451 @@
+# O que existe no Intenza.
+#
+# Metacategorias inspiradas na UFO (Unified Foundational Ontology):
+# kind dá identidade; role e phase são anti-rígidos; relator existe entre partes;
+# categoria é tipo de alta ordem (suas instâncias são tipos de item).
+# O verificador (intenza-kb) confere relações, partições de fase e o código que realiza cada conceito.
+
+concepts:
+  # --- quem e o quê ---------------------------------------------------------
+  - id: party
+    label: Parte
+    category: kind
+    definition: Pessoa ou organização identificável que transaciona. Dá a identidade que comprador e vendedor emprestam.
+
+  - id: person
+    label: Pessoa física
+    category: subkind
+    specializes: party
+    definition: Parte identificada por CPF.
+
+  - id: company
+    label: Pessoa jurídica
+    category: subkind
+    specializes: party
+    definition: Parte identificada por CNPJ, alfanumérico desde 2026.
+
+  - id: buyer
+    label: Comprador
+    category: role
+    specializes: party
+    definition: Papel de quem publica a intenção e escolhe a proposta. Anti-rígido, a mesma parte vende noutra transação.
+
+  - id: seller
+    label: Vendedor
+    category: role
+    specializes: party
+    definition: Papel de quem responde a uma intenção com proposta selada.
+
+  - id: escrow-agent
+    label: Agente de custódia
+    category: role
+    specializes: company
+    definition: Instituição de pagamento autorizada que custodia o valor. A plataforma só comanda os gatilhos de liberação e estorno.
+
+  - id: arbiter
+    label: Árbitro
+    category: role
+    specializes: party
+    definition: Papel de quem confere os campos probatórios numa disputa.
+
+  - id: item
+    label: Item
+    category: kind
+    definition: Objeto físico negociado. É ele que carrega os atributos conferidos na entrega e na disputa.
+
+  # --- classificação --------------------------------------------------------
+  - id: niche
+    label: Nicho
+    category: collective
+    definition: Coletivo de categorias com o mesmo regime regulatório e a mesma onda de lançamento (colecionáveis, moda circular, autopeças).
+
+  - id: category
+    label: Categoria
+    category: type
+    classifies: item
+    part_of: niche
+    definition: Tipo de alta ordem, suas instâncias são tipos de item (carta TCG, tênis, porta dianteira). Ancora no MCC e define as qualidades que o item carrega.
+
+  - id: attribute-schema
+    label: Schema de atributos
+    category: information
+    part_of: category
+    definition: Artefato versionado com as qualidades tipadas de uma categoria. Herda presets dos ancestrais na árvore.
+
+  - id: attribute
+    label: Atributo
+    category: quality
+    inheres_in: item
+    definition: Qualidade do item valorada numa estrutura de qualidade tipada (enum, faixa, identificador normativo). É a espinha probatória do contrato.
+
+  # --- demanda e oferta -----------------------------------------------------
+  - id: intent
+    label: Intenção de compra
+    category: social-object
+    definition: Pedido público de propostas criado pelo comprador, com categoria, restrições sobre atributos e janela de propostas. Não obriga a comprar.
+
+  - id: proposal
+    label: Proposta selada
+    category: commitment
+    definition: Compromisso condicional do vendedor com item de atributos declarados, preço total selado e validade explícita.
+
+  - id: agreement
+    label: Acordo
+    category: relator
+    mediates: [buyer, seller]
+    founded_by: proposal-chosen
+    definition: Contrato que nasce da seleção, com os compromissos mútuos de pagar e de entregar conforme os termos congelados.
+
+  - id: terms-snapshot
+    label: Termos congelados
+    category: information
+    part_of: agreement
+    definition: Cópia canônica da intenção, da proposta e do schema no instante do acordo. O hash dela é a prova.
+
+  - id: escrow
+    label: Escrow
+    category: relator
+    mediates: [buyer, seller, escrow-agent]
+    founded_by: escrow-opened
+    definition: Custódia terceirizada do valor que libera ao vendedor ou estorna ao comprador por gatilho da plataforma.
+
+  - id: dispute
+    label: Disputa
+    category: event
+    participants: [buyer, seller, arbiter]
+    definition: Processo de conferência de campos probatórios entre o que o termo diz e o que chegou.
+
+  - id: field-claim
+    label: Reclamação de campo
+    category: information
+    part_of: dispute
+    definition: Alegação sobre um atributo probatório, esperado contra observado, com evidência anexada.
+
+  # --- reputação ------------------------------------------------------------
+  - id: rating
+    label: Avaliação
+    category: social-object
+    definition: Juízo de uma parte sobre a outra depois da transação, revelado às cegas.
+
+  - id: reputation
+    label: Reputação
+    category: quality
+    inheres_in: party
+    definition: Estimativa a posteriori da confiabilidade de uma parte num papel. Carrega a própria incerteza num intervalo de credibilidade.
+
+  # --- tipos de valor -------------------------------------------------------
+  - id: money
+    label: Dinheiro
+    category: datatype
+    definition: Quantia em unidades menores de uma moeda.
+
+  - id: duration
+    label: Duração
+    category: datatype
+    definition: Período nominal ou exato para janelas e validades.
+
+  - id: entity-id
+    label: Identificador de entidade
+    category: datatype
+    definition: Identificador ordenado no tempo, amigo de índice B-tree.
+
+  - id: mcc
+    label: MCC
+    category: datatype
+    definition: Código de categoria de comerciante que ancora a taxonomia curada.
+
+  - id: cpf
+    label: CPF
+    category: datatype
+    definition: Identificador fiscal de pessoa física com dois dígitos verificadores.
+
+  - id: cnpj
+    label: CNPJ
+    category: datatype
+    definition: Identificador fiscal de pessoa jurídica, com base alfanumérica e dígitos verificadores numéricos.
+
+  - id: gtin
+    label: GTIN
+    category: datatype
+    definition: Identificador de produto com dígito verificador.
+
+  - id: isbn
+    label: ISBN
+    category: datatype
+    definition: Identificador de livro, nas formas de 10 e 13 dígitos.
+
+  - id: vin
+    label: VIN (chassi)
+    category: datatype
+    definition: Identificador do veículo, usado para conferir compatibilidade e origem da peça.
+
+  - id: renavam
+    label: RENAVAM
+    category: datatype
+    definition: Registro do veículo de origem de uma peça de desmonte.
+
+  - id: postal-code
+    label: CEP
+    category: datatype
+    definition: Código postal que resolve a UF de origem e de destino para estimar prazo.
+
+  - id: state
+    label: UF
+    category: datatype
+    definition: Unidade federativa, com região geográfica.
+
+  - id: country
+    label: País
+    category: datatype
+    definition: País ou território, encadeado às regiões estatísticas.
+
+  - id: language
+    label: Idioma
+    category: datatype
+    definition: Idioma de um item, como a língua de impressão de uma carta.
+
+  - id: currency
+    label: Moeda
+    category: datatype
+    definition: Moeda com código alfabético, numérico e unidades menores.
+
+  - id: payment-code
+    label: Código de pagamento
+    category: datatype
+    definition: Payload copia e cola com as instruções de pagamento do escrow.
+
+  - id: event-record
+    label: Registro de evento
+    category: information
+    definition: Envelope imutável de um evento de domínio publicado pelo outbox.
+
+  # --- fases da intenção ----------------------------------------------------
+  - id: intent-open
+    label: Aberta
+    category: phase
+    phase_of: intent
+    definition: Recebendo propostas até o fechamento.
+
+  - id: intent-closed
+    label: Fechada
+    category: phase
+    phase_of: intent
+    definition: Janela encerrada, propostas reveladas ao comprador e seleção pendente.
+
+  - id: intent-awarded
+    label: Adjudicada
+    category: phase
+    phase_of: intent
+    definition: Uma proposta escolhida, virou acordo.
+
+  - id: intent-expired
+    label: Expirada
+    category: phase
+    phase_of: intent
+    definition: Fechou sem seleção dentro do prazo.
+
+  - id: intent-cancelled
+    label: Cancelada
+    category: phase
+    phase_of: intent
+    definition: Retirada pelo comprador antes da seleção.
+
+  # --- fases da proposta ----------------------------------------------------
+  - id: proposal-active
+    label: Ativa
+    category: phase
+    phase_of: proposal
+    definition: Válida e concorrendo.
+
+  - id: proposal-withdrawn
+    label: Retirada
+    category: phase
+    phase_of: proposal
+    definition: Retirada pelo vendedor antes do fechamento.
+
+  - id: proposal-selected
+    label: Selecionada
+    category: phase
+    phase_of: proposal
+    definition: Escolhida pelo comprador.
+
+  - id: proposal-rejected
+    label: Preterida
+    category: phase
+    phase_of: proposal
+    definition: Outra proposta foi escolhida ou a intenção terminou sem ela.
+
+  - id: proposal-lapsed
+    label: Caducada
+    category: phase
+    phase_of: proposal
+    definition: A validade venceu antes da seleção.
+
+  # --- fases do acordo ------------------------------------------------------
+  - id: agreement-awaiting-funding
+    label: Aguardando pagamento
+    category: phase
+    phase_of: agreement
+    definition: Escrow aberto, esperando o comprador pagar.
+
+  - id: agreement-funded
+    label: Pago
+    category: phase
+    phase_of: agreement
+    definition: Valor custodiado pelo agente, vendedor liberado para enviar.
+
+  - id: agreement-shipped
+    label: Enviado
+    category: phase
+    phase_of: agreement
+    definition: Vendedor informou o envio.
+
+  - id: agreement-delivered
+    label: Entregue
+    category: phase
+    phase_of: agreement
+    definition: Item chegou, janela de inspeção correndo.
+
+  - id: agreement-disputed
+    label: Em disputa
+    category: phase
+    phase_of: agreement
+    definition: Comprador reclamou de campos probatórios dentro da inspeção.
+
+  - id: agreement-released
+    label: Liberado
+    category: phase
+    phase_of: agreement
+    definition: Terminal. Valor liberado ao vendedor.
+
+  - id: agreement-refunded
+    label: Estornado
+    category: phase
+    phase_of: agreement
+    definition: Terminal. Valor devolvido ao comprador.
+
+  - id: agreement-cancelled
+    label: Cancelado
+    category: phase
+    phase_of: agreement
+    definition: Terminal. Pagamento não chegou no prazo.
+
+  # --- eventos --------------------------------------------------------------
+  - id: intent-published
+    label: Intenção publicada
+    category: event
+    participants: [buyer]
+    creates: [intent]
+    definition: O comprador publica a intenção e abre a janela de propostas.
+
+  - id: proposal-submitted
+    label: Proposta enviada
+    category: event
+    participants: [seller]
+    creates: [proposal]
+    definition: O vendedor sela e envia uma proposta.
+
+  - id: proposal-revised
+    label: Proposta revisada
+    category: event
+    participants: [seller]
+    definition: O vendedor troca a proposta ativa antes do fechamento.
+
+  - id: proposal-retracted
+    label: Proposta retirada
+    category: event
+    participants: [seller]
+    definition: O vendedor retira a proposta antes do fechamento.
+
+  - id: bidding-closed
+    label: Janela fechada
+    category: event
+    participants: [intent]
+    definition: O prazo vence sob o relógio do banco e os envelopes podem ser abertos.
+
+  - id: proposal-chosen
+    label: Proposta escolhida
+    category: event
+    participants: [buyer, proposal]
+    definition: O comprador escolhe uma proposta entre as reveladas.
+
+  - id: agreement-formed
+    label: Acordo formado
+    category: event
+    participants: [buyer, seller]
+    creates: [agreement]
+    definition: Os termos são congelados e o acordo nasce.
+
+  - id: escrow-opened
+    label: Escrow aberto
+    category: event
+    participants: [escrow-agent, buyer]
+    creates: [escrow]
+    definition: O agente de custódia abre a cobrança com as instruções de pagamento.
+
+  - id: escrow-held
+    label: Valor custodiado
+    category: event
+    participants: [escrow-agent, buyer]
+    definition: O pagamento caiu na custódia.
+
+  - id: item-shipped
+    label: Item enviado
+    category: event
+    participants: [seller, item]
+    definition: O vendedor despacha o item.
+
+  - id: item-delivered
+    label: Item entregue
+    category: event
+    participants: [buyer, item]
+    definition: O item chega ao comprador e a inspeção começa.
+
+  - id: delivery-accepted
+    label: Entrega aceita
+    category: event
+    participants: [buyer]
+    definition: O comprador aceita, ou a inspeção vence sem reclamação.
+
+  - id: escrow-released
+    label: Valor liberado
+    category: event
+    participants: [escrow-agent, seller]
+    definition: O agente libera o valor ao vendedor.
+
+  - id: escrow-refunded
+    label: Valor estornado
+    category: event
+    participants: [escrow-agent, buyer]
+    definition: O agente devolve o valor ao comprador.
+
+  - id: dispute-resolved
+    label: Disputa resolvida
+    category: event
+    participants: [arbiter]
+    definition: A conferência de campos decide entre liberar e estornar.
+
+  - id: rating-submitted
+    label: Avaliação enviada
+    category: event
+    participants: [party]
+    creates: [rating]
+    definition: Uma parte avalia a outra, ainda selada.
+
+  - id: ratings-revealed
+    label: Avaliações reveladas
+    category: event
+    participants: [buyer, seller]
+    definition: As duas avaliações aparecem juntas, ou o prazo vence.
+
+  - id: selection-timed-out
+    label: Intenção expirada
+    category: event
+    participants: [intent]
+    definition: O prazo de seleção vence sem escolha.
+
+  - id: intent-withdrawn
+    label: Intenção cancelada
+    category: event
+    participants: [buyer]
+    definition: O comprador retira a intenção.
