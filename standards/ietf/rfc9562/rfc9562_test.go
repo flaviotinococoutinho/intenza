@@ -88,3 +88,18 @@ func BenchmarkNew(b *testing.B) {
 		_, _ = g.New()
 	}
 }
+
+func TestFromHashIsDeterministicVersion8(t *testing.T) {
+	sum := bytes.Repeat([]byte{0xAB}, 32)
+	a, err := FromHash(sum)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := FromHash(sum)
+	if a != b || a.Version() != 8 || a[8]>>6 != 0b10 {
+		t.Fatalf("%s v%d", a, a.Version())
+	}
+	if _, err := FromHash(sum[:8]); err == nil {
+		t.Fatal("short hash")
+	}
+}

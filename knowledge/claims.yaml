@@ -43,7 +43,12 @@ claims:
     statement: Nenhuma proposta é aceita depois do fechamento, nem em corrida com o fechador.
     about: [proposal, intent]
     kind: safety
-    basis: conjecture
+    basis: by-construction
+    evidence:
+      - symbol: internal/adapter/mongo.guardFilter
+      - test: internal/domain/intent.TestNoProposalAtOrAfterTheDeadline
+      - test: internal/integration.TestNoProposalAfterCloseUnderRace
+    notes: O envio grava a intenção com a guarda status open e closes_at maior que $$NOW, na mesma transação. A corrida com o fechador vira conflito de escrita e a nova tentativa já vê a intenção fechada.
 
   - id: effective-status-is-time-function
     statement: O estado efetivo de uma intenção é função pura do relógio recebido. Timer atrasado não muda o que se lê.
@@ -78,7 +83,11 @@ claims:
     statement: Uma intenção gera no máximo um acordo.
     about: [intent, agreement]
     kind: safety
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/domain/intent.TestLifecycle
+      - test: internal/integration.TestSingleAwardUnderRace
+    notes: A máquina de estados recusa a segunda adjudicação, a versão da intenção barra a escrita concorrente e o índice único em agreements.intent_id é o último piso.
 
   - id: terms-snapshot-tamper-evident
     statement: Os termos do acordo são congelados em JSON canônico e o SHA-256 vai junto. Qualquer alteração muda o hash.
@@ -299,7 +308,10 @@ claims:
     statement: Mudança de estado e evento são gravados na mesma transação. Não existe estado sem evento nem evento sem estado.
     about: [event-record, intent, proposal, agreement]
     kind: integrity
-    basis: conjecture
+    basis: example-tested
+    evidence:
+      - test: internal/integration.TestOutboxIsAtomicWithState
+      - test: internal/integration.TestEndToEndMarket
 
   - id: consumers-effectively-once
     statement: Cada consumidor aplica um evento no máximo uma vez, com inbox único por consumidor e evento na mesma transação do efeito.
@@ -324,7 +336,11 @@ claims:
     statement: Repetir a criação de intenção com a mesma Idempotency-Key devolve a mesma intenção, com ou sem Redis.
     about: [intent]
     kind: safety
-    basis: conjecture
+    basis: by-construction
+    evidence:
+      - symbol: internal/app.Market.PublishIntent
+      - test: internal/integration.TestEndToEndMarket
+    notes: O id da intenção é um UUIDv8 derivado de comprador e chave; o _id único do Mongo é a garantia. O Redis não participa da idempotência.
 
   - id: deadlines-survive-redis-loss
     statement: Sem Redis, os fechamentos acontecem pela varredura no banco com atraso abaixo de 30 s.

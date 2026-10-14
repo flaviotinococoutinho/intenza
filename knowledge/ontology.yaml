@@ -11,6 +11,7 @@ concepts:
     label: Parte
     category: kind
     definition: Pessoa ou organização identificável que transaciona. Dá a identidade que comprador e vendedor emprestam.
+    realized_by: [internal/app.Party]
 
   - id: person
     label: Pessoa física
