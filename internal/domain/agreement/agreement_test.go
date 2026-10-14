@@ -228,3 +228,20 @@ func TestDeadlines(t *testing.T) {
 		t.Fatal("only the seller ships")
 	}
 }
+
+func TestAttachEscrowOnceAndConsistently(t *testing.T) {
+	a := formed(t)
+	b, err := a.AttachEscrow("esc-9", "000201...")
+	if err != nil || b.EscrowID != "esc-9" || b.Version != a.Version+1 {
+		t.Fatalf("%v %+v", err, b)
+	}
+	if same, err := b.AttachEscrow("esc-9", "000201..."); err != nil || same.Version != b.Version {
+		t.Fatal("attaching the same escrow is a no-op")
+	}
+	if _, err := b.AttachEscrow("esc-other", ""); !errors.Is(err, ErrConflict) {
+		t.Fatal("a second escrow for the same agreement is a conflict")
+	}
+	if _, _, err := b.Funded("esc-other", t0); !errors.Is(err, ErrConflict) {
+		t.Fatal("funding confirmation for another escrow")
+	}
+}

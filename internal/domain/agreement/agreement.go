@@ -173,6 +173,7 @@ type Agreement struct {
 	TermsHash    string     `json:"terms_hash"`
 	Status       Status     `json:"status"`
 	EscrowID     string     `json:"escrow_id,omitempty"`
+	PaymentCode  string     `json:"payment_code,omitempty"`
 	FundBy       time.Time  `json:"fund_by"`
 	ShipBy       *time.Time `json:"ship_by,omitempty"`
 	InspectUntil *time.Time `json:"inspect_until,omitempty"`
@@ -238,9 +239,28 @@ func (a Agreement) party(id string) (buyer, seller bool) {
 	return id == a.Terms.BuyerID, id == a.Terms.SellerID
 }
 
+// AttachEscrow records the escrow the agent opened and the payment code the
+// buyer pays with. Attaching the same escrow again is a no-op.
+func (a Agreement) AttachEscrow(escrowID, paymentCode string) (Agreement, error) {
+	switch {
+	case a.EscrowID == escrowID:
+		return a, nil
+	case a.EscrowID != "":
+		return a, ErrConflict
+	case a.Status != StatusAwaitingFunding:
+		return a, ErrConflict
+	}
+	a.EscrowID, a.PaymentCode = escrowID, paymentCode
+	a.Version++
+	return a, nil
+}
+
 // Funded records that the escrow agent holds the money; the seller's
 // shipping deadline starts now.
 func (a Agreement) Funded(escrowID string, now time.Time) (Agreement, []event.Event, error) {
+	if a.EscrowID != "" && a.EscrowID != escrowID {
+		return a, nil, ErrConflict
+	}
 	next, err := a.apply(TriggerFund)
 	if err != nil {
 		return a, nil, err
