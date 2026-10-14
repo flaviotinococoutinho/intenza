@@ -11,14 +11,14 @@ A priori vale para toda entrada no escopo (conhecimento determinístico). A post
 | base | modo | força | alegações |
 |---|---|---:|---:|
 | por construção | a priori | 7 | 2 |
-| prova exaustiva | a priori | 6 | 3 |
-| teste de propriedade | a priori | 5 | 4 |
-| teste de exemplo | a priori | 4 | 12 |
+| prova exaustiva | a priori | 6 | 4 |
+| teste de propriedade | a priori | 5 | 5 |
+| teste de exemplo | a priori | 4 | 17 |
 | medido | a posteriori | 3 | 0 |
 | testemunho | testemunhal | 2 | 2 |
-| conjectura | sem justificativa | 1 | 22 |
+| conjectura | sem justificativa | 1 | 16 |
 
-Dívida epistêmica: **22 de 45** alegações ainda são conjecturas.
+Dívida epistêmica: **16 de 46** alegações ainda são conjecturas.
 
 ## Riscos
 
@@ -31,7 +31,7 @@ Cada risco é uma cadeia causa → mecanismo → efeito. A solução é determin
 | **aleatória** | clock-skew, double-award, double-settlement, duplicate-intent, duplicate-processing, invalid-identifier, late-bid, lost-event | cache-stampede, database-outage, deadline-herd, psp-latency-tail | broker-outage, redis-outage, webhook-loss |
 | **epistêmica** | autoparts-regulatory, biased-ranking, bid-leak, forbidden-category, funds-custody, he-said-she-said, retaliation | cold-start-seller | poison-message |
 
-Mitigados com a evidência certa para a natureza da solução: **7 de 24**.
+Mitigados com a evidência certa para a natureza da solução: **9 de 24**.
 
 | risco | S×P | causa → mecanismo → efeito | solução | status | mitigado por | experimentos |
 |---|---:|---|---|---|---|---|
@@ -40,7 +40,7 @@ Mitigados com a evidência certa para a natureza da solução: **7 de 24**.
 | **webhook-loss**<br>Webhook do agente de custódia perdido, duplicado ou fora de ordem | 16 | Rede, retentativa do agente ou indisponibilidade da API. → A plataforma não fica sabendo que o dinheiro caiu ou foi liberado. → Acordo preso, vendedor sem enviar, comprador sem resposta. | híbrida | exposto | webhook-handling-idempotent, reconciliation-converges |  |
 | **psp-latency-tail**<br>Cauda de latência do agente de custódia | 16 | Agente externo com latência lognormal e picos. → Chamadas presas seguram conexões e goroutines e a fila cresce. → Latência da API sobe para todo mundo, não só para quem paga. | estocástica | exposto | psp-calls-bounded |  |
 | **bid-leak**<br>Vazamento de preço selado | 15 | Caminho não previsto expõe o preço (log, evento, dump, consulta ampla, revelação antecipada). → Concorrente ou comprador vê preços antes do fechamento e passa a ancorar ou combinar. → A proposta selada vira leilão aberto disfarçado e os melhores vendedores saem. | determinística | mitigado | sealed-price-encrypted-at-rest, reveal-gated-by-persisted-close, events-carry-no-price |  |
-| **double-settlement**<br>Liberação ou estorno disparado duas vezes, ou os dois | 15 | Evento redelivery, webhook duplicado ou retentativa após timeout. → O comando ao agente de custódia é reenviado sem chave ou o estado não é terminal. → Dinheiro liberado e estornado, ou liberado duas vezes. | determinística | exposto | escrow-command-idempotent, settlement-terminal-exclusive, webhook-handling-idempotent |  |
+| **double-settlement**<br>Liberação ou estorno disparado duas vezes, ou os dois | 15 | Evento redelivery, webhook duplicado ou retentativa após timeout. → O comando ao agente de custódia é reenviado sem chave ou o estado não é terminal. → Dinheiro liberado e estornado, ou liberado duas vezes. | determinística | mitigado | escrow-command-idempotent, settlement-terminal-exclusive, webhook-handling-idempotent |  |
 | **late-bid**<br>Proposta aceita depois do prazo | 12 | Envio e fechamento correm no mesmo instante. → A checagem de prazo e a gravação acontecem em momentos diferentes. → Vendedor que viu o fechamento chegando entra depois e quebra a isonomia. | determinística | exposto | no-bid-after-close |  |
 | **invalid-identifier**<br>Identificador digitado errado vira prova falsa | 12 | Erro de digitação em GTIN, VIN, ISBN ou documento. → O campo probatório guarda um identificador que não existe. → Contrato aponta para outro item ou para ninguém. | determinística | mitigado | identifiers-check-digit-validated |  |
 | **lost-event**<br>Evento perdido entre banco e broker | 12 | Escrita dupla em banco e broker sem transação comum. → O processo cai depois de gravar o estado e antes de publicar. → Projeções e sagas nunca ficam sabendo da mudança. | determinística | exposto | outbox-atomic-with-state |  |
@@ -52,7 +52,7 @@ Mitigados com a evidência certa para a natureza da solução: **7 de 24**.
 | **double-award**<br>Duas propostas escolhidas para a mesma intenção | 10 | Clique duplo, retentativa do cliente ou duas abas. → Duas seleções leem a intenção aberta e gravam em paralelo. → Dois acordos e dois escrows para um item só. | determinística | exposto | single-award-per-intent |  |
 | **forbidden-category**<br>Anúncio em categoria proibida | 10 | Erro de curadoria ou categoria genérica demais. → Intenção é publicada num nó que admite item proibido. → Venda de arma, medicamento ou animal pela plataforma. | determinística | mitigado | forbidden-categories-unrepresentable |  |
 | **autoparts-regulatory**<br>Peça de desmonte sem rastreabilidade ou item de segurança | 10 | Autopeças concentram a maior densidade regulatória. → Vendedor sem credencial ou peça sem etiqueta entra na árvore. → Receptação, risco à segurança viária e sanção. | determinística | mitigado | autoparts-restricted-by-design, identifiers-check-digit-validated, dismantling-law |  |
-| **retaliation**<br>Avaliação retaliatória | 9 | Uma parte vê a avaliação da outra antes de avaliar. → Nota baixa provoca nota baixa de volta. → Reputação vira negociação e perde sinal. | determinística | exposto | ratings-double-blind |  |
+| **retaliation**<br>Avaliação retaliatória | 9 | Uma parte vê a avaliação da outra antes de avaliar. → Nota baixa provoca nota baixa de volta. → Reputação vira negociação e perde sinal. | determinística | mitigado | ratings-double-blind |  |
 | **clock-skew**<br>Relógio de um nó fora do lugar | 8 | NTP falha ou VM pausa e o relógio local adianta ou atrasa. → Decisões de prazo tomadas com o relógio local discordam entre nós. → Proposta aceita depois do prazo ou envelope aberto antes da hora. | determinística | mitigado | reveal-gated-by-persisted-close, effective-status-is-time-function |  |
 | **database-outage**<br>Banco indisponível | 8 | Primário pausa, cai ou troca. → Chamadas ficam esperando conexão e acumulam. → A API pendura em vez de falhar rápido. | estocástica | exposto | mongo-outage-fails-fast |  |
 | **poison-message**<br>Evento malformado trava o consumidor | 6 | Versão de esquema inesperada ou dado corrompido. → O consumidor falha sempre no mesmo offset. → A partição para e o atraso cresce sem limite. | híbrida | exposto | poison-message-isolated |  |
@@ -68,23 +68,30 @@ Mitigados com a evidência certa para a natureza da solução: **7 de 24**.
 | **reveal-gated-by-persisted-close** | O preço só abre depois que a intenção foi fechada no banco, sob o relógio do banco. Relógio local adiantado não antecipa a revelação. | safety | por construção | símbolo `internal/domain/proposal.Reveal`<br>teste `internal/domain/proposal.TestRevealIgnoresTheLocalClock` |
 | **check-digits-catch-single-substitutions** | GTIN, ISBN-10 e VIN detectam toda substituição de um caractere. No VIN, a exceção são letras com a mesma transliteração (A e J valem 1). | integrity | prova exaustiva | teste `standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown`<br>teste `standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition`<br>teste `standards/iso/iso3779.TestEverySubstitutionChangesTheCheckOrCollidesInTransliteration` |
 | **gtin-misses-transpositions-by-five** | O dígito do GTIN não detecta troca de vizinhos que diferem em 5 (05 por 50). O ISBN-10 detecta toda troca de vizinhos. | integrity | prova exaustiva | teste `standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown`<br>teste `standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition` |
-| **phases-match-state-machines** | As fases declaradas na ontologia são exatamente os estados alcançáveis das máquinas de estado, e as fases terminais não têm saída. | integrity | prova exaustiva | teste `internal/domain/intent.TestMachineMatchesTheOntologyPhases`<br>teste `internal/domain/proposal.TestMachineMatchesTheOntologyPhases` |
+| **phases-match-state-machines** | As fases declaradas na ontologia são exatamente os estados alcançáveis das máquinas de estado, e as fases terminais não têm saída. | integrity | prova exaustiva | teste `internal/domain/intent.TestMachineMatchesTheOntologyPhases`<br>teste `internal/domain/proposal.TestMachineMatchesTheOntologyPhases`<br>teste `internal/domain/agreement.TestSettlementOutcomesAreExclusive` |
+| **settlement-terminal-exclusive** | Liberado, estornado e cancelado são terminais e exclusivos. Um acordo nunca libera e estorna. | safety | prova exaustiva | teste `internal/domain/agreement.TestSettlementOutcomesAreExclusive` |
 | **cnpj-alphanumeric-extends-legacy** | A regra do CNPJ alfanumérico coincide com a regra numérica antiga em toda base só de dígitos. | integrity | teste de propriedade | teste `standards/rfb/cnpj.TestAlphanumericRuleAgreesWithLegacyOnDigits` |
 | **cpf-check-is-imperfect** | O CPF deixa passar cerca de 0,2% das substituições de um dígito, porque os restos 0 e 1 viram o mesmo dígito. | integrity | teste de propriedade | teste `standards/rfb/cpf.TestSingleSubstitutionDetectionRate` |
 | **generated-items-satisfy-own-predicates** | Em qualquer folha do catálogo, um item sorteado válido passa no parser, satisfaz as restrições derivadas dele e não diverge de si na conferência. | integrity | teste de propriedade | teste `internal/domain/schema.TestGeneratedItemsRoundTripOnEveryLeaf`<br>teste `internal/domain/schema.TestAdherenceIsBounded` |
+| **reputation-shrinks-small-samples** | Com poucas avaliações, a reputação encolhe para a média da plataforma. Um 5 isolado não supera um histórico longo de 4,8. | economic | teste de propriedade | teste `internal/domain/reputation.TestShrinkageAgainstLuckyNewcomers`<br>teste `internal/domain/reputation.TestIntervalShrinksWithEvidence` |
 | **selection-deterministic-explainable** | A ordenação das propostas é função pura de critérios e pesos, invariante à ordem de chegada, e uma proposta dominada nunca fica acima de quem a domina. | economic | teste de propriedade | teste `internal/domain/selection.TestRankingIsPermutationInvariant`<br>teste `internal/domain/selection.TestDominatedNeverRanksAboveItsDominator`<br>teste `internal/domain/selection.TestScoresContributionsAndPareto` |
 | **autoparts-restricted-by-design** | Autopeças só aceitam vendedor com credencial de desmonte e peça com código de rastreabilidade. Sistemas de segurança não existem na árvore. | regulatory | teste de exemplo | teste `internal/domain/taxonomy.TestDefaultCatalogShape`<br>teste `internal/domain/taxonomy.TestLoaderRefusesForbiddenAnchorsAndTerms` |
 | **brcode-composes-norms** | O BR Code compõe MCC, moeda 986, país BR e o CRC EMV, e o exemplo do manual do BCB reencoda byte a byte. | integrity | teste de exemplo | teste `standards/emvco/mpm.TestParseSplitAndSeal`<br>teste `standards/bcb/brcode.TestManualExample` |
-| **dispute-is-field-conference** | Disputa é conferência de campos. Cada reclamação compara esperado contra observado de um atributo probatório do schema congelado. | integrity | teste de exemplo | teste `internal/domain/schema.TestConferenceOnlyAboutEvidentiaryTerms` |
+| **credible-intervals-from-beta-inversion** | O intervalo de credibilidade de 95% vem da inversa da beta incompleta regularizada e bate com as formas fechadas conhecidas. | integrity | teste de exemplo | teste `internal/domain/reputation.TestQuantilesAgainstClosedForms`<br>teste `internal/domain/reputation.TestSamplingMatchesThePosteriorMean` |
+| **dispute-is-field-conference** | Disputa é conferência de campos. Cada reclamação compara esperado contra observado de um atributo probatório do schema congelado. | integrity | teste de exemplo | teste `internal/domain/schema.TestConferenceOnlyAboutEvidentiaryTerms`<br>teste `internal/domain/agreement.TestDisputeNeedsADiscrepancyOnAFixedField` |
 | **durations-keep-nominal-apart** | Durações separam o nominal do exato. P1D atravessa o horário de verão mantendo o relógio de parede, PT24H não, e P1M nunca vira nanossegundos. | integrity | teste de exemplo | teste `standards/iso/iso8601.TestNominalVersusExact` |
 | **effective-status-is-time-function** | O estado efetivo de uma intenção é função pura do relógio recebido. Timer atrasado não muda o que se lê. | safety | teste de exemplo | teste `internal/domain/intent.TestEffectiveStatusIsAFunctionOfTime` |
 | **events-carry-no-price** | Nenhum evento de proposta publicado carrega preço. | safety | teste de exemplo | teste `internal/domain/proposal.TestEventsCarryNoPrice` |
+| **exploration-exposes-new-sellers** | Na notificação de intenções, amostragem de Thompson dá exposição mínima a vendedores sem histórico. | economic | teste de exemplo | teste `internal/domain/reputation.TestThompsonSamplingExposesNewcomers` |
 | **identifiers-check-digit-validated** | Identificadores normativos (GTIN, ISBN, VIN, CPF, CNPJ, RENAVAM) passam pelo dígito verificador antes de virar prova. | integrity | teste de exemplo | teste `internal/domain/schema.TestNormativeKindsValidateThroughStandards` |
 | **jcs-reproduces-rfc-vectors** | A canonicalização reproduz byte a byte as amostras do RFC 8785, inclusive a ordem por unidades UTF-16, e recusa nomes duplicados. | integrity | teste de exemplo | teste `standards/ietf/rfc8785.TestNumberSamplesFromAppendixB`<br>teste `standards/ietf/rfc8785.TestSampleFromSection3`<br>teste `standards/ietf/rfc8785.TestPropertySortingByUTF16`<br>teste `standards/ietf/rfc8785.TestRejectsDuplicatesAndTrailingData` |
 | **normative-lookups-allocation-free** | Consultas por código nas normas são O(1) e não alocam memória. | performance | teste de exemplo | teste `standards/iso/iso4217.TestLookupsDoNotAllocate`<br>teste `standards/iso/iso3166.TestLookupsDoNotAllocate`<br>bench `standards/iso/iso4217.BenchmarkByAlpha` |
 | **normative-tables-match-extracts** | As tabelas compiladas das normas vêm dos extratos versionados. O sha256 do extrato vai no código gerado e um teste confere. | integrity | teste de exemplo | teste `standards/iso/iso4217.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso3166.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso639.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso18245.TestGeneratedTablesMatchExtract`<br>teste `standards/un/m49.TestGeneratedTablesMatchExtract` |
+| **ratings-double-blind** | As avaliações só aparecem quando as duas partes avaliaram ou o prazo venceu. | economic | teste de exemplo | teste `internal/domain/reputation.TestDoubleBlindReveal` |
 | **sealed-price-encrypted-at-rest** | O preço da proposta é gravado cifrado com AES-256-GCM, chave derivada por intenção (HKDF) e dados associados que amarram proposta, vendedor e intenção. | integrity | teste de exemplo | teste `internal/domain/proposal.TestSealedPriceIsBoundToItsProposal`<br>teste `internal/domain/proposal.TestKeyRotationKeepsOldPricesReadable` |
+| **terms-snapshot-tamper-evident** | Os termos do acordo são congelados em JSON canônico e o SHA-256 vai junto. Qualquer alteração muda o hash. | integrity | teste de exemplo | símbolo `internal/domain/agreement.Agreement.VerifyTerms`<br>teste `internal/domain/agreement.TestTermsHashDetectsTampering` |
 | **uuid-v7-strictly-increasing** | Os IDs v7 crescem estritamente mesmo com relógio parado, voltando no tempo ou estourando o contador do milissegundo. | integrity | teste de exemplo | teste `standards/ietf/rfc9562.TestMonotonicUnderAdversarialClocks` |
+| **webhook-handling-idempotent** | Webhook duplicado ou fora de ordem não muda o resultado. A máquina de estados recusa transição inválida e o evento é deduplicado. | safety | teste de exemplo | teste `internal/domain/agreement.TestSettledIsIdempotentAndOrderAware` |
 | **dismantling-law** | Desmonte de veículo exige credenciamento no órgão de trânsito do estado e peças com rastreabilidade até o veículo de origem. | regulatory | testemunho | Lei nº 12.977/2014 (Lei do Desmonte) e regulamentação do CONTRAN |
 | **gs1-prefix-is-not-origin** | O prefixo GS1 de um GTIN diz quem emitiu o número, não onde o produto foi feito. | integrity | testemunho | GS1 — GS1 Company Prefix |
 | **backlog-drains** | Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento. | liveness | conjectura |  |
@@ -92,7 +99,6 @@ Mitigados com a evidência certa para a natureza da solução: **7 de 24**.
 | **consumers-effectively-once** | Cada consumidor aplica um evento no máximo uma vez, com inbox único por consumidor e evento na mesma transação do efeito. | integrity | conjectura |  |
 | **deadlines-survive-redis-loss** | Sem Redis, os fechamentos acontecem pela varredura no banco com atraso abaixo de 30 s. | liveness | conjectura |  |
 | **escrow-command-idempotent** | Comandos ao escrow carregam chave de idempotência. Repetir não duplica efeito. | safety | conjectura |  |
-| **exploration-exposes-new-sellers** | Na notificação de intenções, amostragem de Thompson dá exposição mínima a vendedores sem histórico. | economic | conjectura |  |
 | **intent-creation-idempotent** | Repetir a criação de intenção com a mesma Idempotency-Key devolve a mesma intenção, com ou sem Redis. | safety | conjectura |  |
 | **mongo-outage-fails-fast** | Com o banco pausado, a API responde 503 em menos de 2 s em vez de pendurar, e volta sozinha. | performance | conjectura |  |
 | **no-bid-after-close** | Nenhuma proposta é aceita depois do fechamento, nem em corrida com o fechador. | safety | conjectura |  |
@@ -102,13 +108,8 @@ Mitigados com a evidência certa para a natureza da solução: **7 de 24**.
 | **poison-message-isolated** | Evento malformado vai para a fila de mortos depois de 3 tentativas e não trava a partição. | liveness | conjectura |  |
 | **psp-calls-bounded** | Chamadas ao agente de custódia têm prazo, disjuntor e retentativa com jitter. Com cauda lognormal, o p99 da API fica abaixo de 1 s. | performance | conjectura |  |
 | **rate-limit-protects-p99** | Na corrida de última hora, o limite GCRA mantém o p99 de envio de proposta abaixo de 500 ms para quem está dentro da cota. | performance | conjectura |  |
-| **ratings-double-blind** | As avaliações só aparecem quando as duas partes avaliaram ou o prazo venceu. | economic | conjectura |  |
 | **reconciliation-converges** | Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos. | liveness | conjectura |  |
-| **reputation-shrinks-small-samples** | Com poucas avaliações, a reputação encolhe para a média da plataforma. Um 5 isolado não supera um histórico longo de 4,8. | economic | conjectura |  |
-| **settlement-terminal-exclusive** | Liberado, estornado e cancelado são terminais e exclusivos. Um acordo nunca libera e estorna. | safety | conjectura |  |
 | **single-award-per-intent** | Uma intenção gera no máximo um acordo. | safety | conjectura |  |
-| **terms-snapshot-tamper-evident** | Os termos do acordo são congelados em JSON canônico e o SHA-256 vai junto. Qualquer alteração muda o hash. | integrity | conjectura |  |
-| **webhook-handling-idempotent** | Webhook duplicado ou fora de ordem não muda o resultado. A máquina de estados recusa transição inválida e o evento é deduplicado. | safety | conjectura |  |
 
 ## Ontologia
 
@@ -193,7 +194,7 @@ flowchart LR
 
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
-| **Acordo**<br>`agreement` | Contrato que nasce da seleção, com os compromissos mútuos de pagar e de entregar conforme os termos congelados. | media buyer, seller<br>fundado por proposal-chosen |  |  |
+| **Acordo**<br>`agreement` | Contrato que nasce da seleção, com os compromissos mútuos de pagar e de entregar conforme os termos congelados. | media buyer, seller<br>fundado por proposal-chosen |  | `internal/domain/agreement.Agreement` |
 | **Escrow**<br>`escrow` | Custódia terceirizada do valor que libera ao vendedor ou estorna ao comprador por gatilho da plataforma. | media buyer, seller, escrow-agent<br>fundado por escrow-opened |  |  |
 
 ### commitment — compromisso social com validade
@@ -207,7 +208,7 @@ flowchart LR
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
 | **Intenção de compra**<br>`intent` | Pedido público de propostas criado pelo comprador, com categoria, restrições sobre atributos e janela de propostas. Não obriga a comprar. |  |  | `internal/domain/intent.Intent` |
-| **Avaliação**<br>`rating` | Juízo de uma parte sobre a outra depois da transação, revelado às cegas. |  |  |  |
+| **Avaliação**<br>`rating` | Juízo de uma parte sobre a outra depois da transação, revelado às cegas. |  |  | `internal/domain/reputation.Rating` |
 
 ### type — tipo de alta ordem: instâncias são tipos
 
@@ -226,15 +227,15 @@ flowchart LR
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
 | **Atributo**<br>`attribute` | Qualidade do item valorada numa estrutura de qualidade tipada (enum, faixa, identificador normativo). É a espinha probatória do contrato. | inere em item |  | `internal/domain/schema.Value` |
-| **Reputação**<br>`reputation` | Estimativa a posteriori da confiabilidade de uma parte num papel. Carrega a própria incerteza num intervalo de credibilidade. | inere em party |  |  |
+| **Reputação**<br>`reputation` | Estimativa a posteriori da confiabilidade de uma parte num papel. Carrega a própria incerteza num intervalo de credibilidade. | inere em party |  | `internal/domain/reputation.Score` |
 
 ### information — artefato de informação
 
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
 | **Schema de atributos**<br>`attribute-schema` | Artefato versionado com as qualidades tipadas de uma categoria. Herda presets dos ancestrais na árvore. | parte de category |  | `internal/domain/schema.Schema` |
-| **Termos congelados**<br>`terms-snapshot` | Cópia canônica da intenção, da proposta e do schema no instante do acordo. O hash dela é a prova. | parte de agreement | ietf-rfc-8785 |  |
-| **Reclamação de campo**<br>`field-claim` | Alegação sobre um atributo probatório, esperado contra observado, com evidência anexada. | parte de dispute |  |  |
+| **Termos congelados**<br>`terms-snapshot` | Cópia canônica da intenção, da proposta e do schema no instante do acordo. O hash dela é a prova. | parte de agreement | ietf-rfc-8785 | `internal/domain/agreement.Terms` |
+| **Reclamação de campo**<br>`field-claim` | Alegação sobre um atributo probatório, esperado contra observado, com evidência anexada. | parte de dispute |  | `internal/domain/agreement.ClaimedField` |
 | **Registro de evento**<br>`event-record` | Envelope imutável de um evento de domínio publicado pelo outbox. |  | ietf-rfc-9562 | `internal/domain/event.Event` |
 
 ### datatype — valor sem identidade
@@ -272,37 +273,39 @@ flowchart LR
 | **Selecionada**<br>`proposal-selected` | Escolhida pelo comprador. | fase de proposal |  | `internal/domain/proposal.StatusSelected` |
 | **Preterida**<br>`proposal-rejected` | Outra proposta foi escolhida ou a intenção terminou sem ela. | fase de proposal |  | `internal/domain/proposal.StatusRejected` |
 | **Caducada**<br>`proposal-lapsed` | A validade venceu antes da seleção. | fase de proposal |  | `internal/domain/proposal.StatusLapsed` |
-| **Aguardando pagamento**<br>`agreement-awaiting-funding` | Escrow aberto, esperando o comprador pagar. | fase de agreement |  |  |
-| **Pago**<br>`agreement-funded` | Valor custodiado pelo agente, vendedor liberado para enviar. | fase de agreement |  |  |
-| **Enviado**<br>`agreement-shipped` | Vendedor informou o envio. | fase de agreement |  |  |
-| **Entregue**<br>`agreement-delivered` | Item chegou, janela de inspeção correndo. | fase de agreement |  |  |
-| **Em disputa**<br>`agreement-disputed` | Comprador reclamou de campos probatórios dentro da inspeção. | fase de agreement |  |  |
-| **Liberado**<br>`agreement-released` | Terminal. Valor liberado ao vendedor. | fase de agreement |  |  |
-| **Estornado**<br>`agreement-refunded` | Terminal. Valor devolvido ao comprador. | fase de agreement |  |  |
-| **Cancelado**<br>`agreement-cancelled` | Terminal. Pagamento não chegou no prazo. | fase de agreement |  |  |
+| **Aguardando pagamento**<br>`agreement-awaiting-funding` | Escrow aberto, esperando o comprador pagar. | fase de agreement |  | `internal/domain/agreement.StatusAwaitingFunding` |
+| **Pago**<br>`agreement-funded` | Valor custodiado pelo agente, vendedor liberado para enviar. | fase de agreement |  | `internal/domain/agreement.StatusFunded` |
+| **Enviado**<br>`agreement-shipped` | Vendedor informou o envio. | fase de agreement |  | `internal/domain/agreement.StatusShipped` |
+| **Entregue**<br>`agreement-delivered` | Item chegou, janela de inspeção correndo. | fase de agreement |  | `internal/domain/agreement.StatusDelivered` |
+| **Em disputa**<br>`agreement-disputed` | Comprador reclamou de campos probatórios dentro da inspeção. | fase de agreement |  | `internal/domain/agreement.StatusDisputed` |
+| **Liberando**<br>`agreement-releasing` | Liberação pedida ao agente de custódia, esperando a confirmação dele. | fase de agreement |  | `internal/domain/agreement.StatusReleasing` |
+| **Estornando**<br>`agreement-refunding` | Estorno pedido ao agente de custódia, esperando a confirmação dele. | fase de agreement |  | `internal/domain/agreement.StatusRefunding` |
+| **Liberado**<br>`agreement-released` | Terminal. Valor liberado ao vendedor. | fase de agreement |  | `internal/domain/agreement.StatusReleased` |
+| **Estornado**<br>`agreement-refunded` | Terminal. Valor devolvido ao comprador. | fase de agreement |  | `internal/domain/agreement.StatusRefunded` |
+| **Cancelado**<br>`agreement-cancelled` | Terminal. Pagamento não chegou no prazo. | fase de agreement |  | `internal/domain/agreement.StatusCancelled` |
 
 ### event — evento (perdurante)
 
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
-| **Disputa**<br>`dispute` | Processo de conferência de campos probatórios entre o que o termo diz e o que chegou. | participantes buyer, seller, arbiter |  |  |
+| **Disputa**<br>`dispute` | Processo de conferência de campos probatórios entre o que o termo diz e o que chegou. | participantes buyer, seller, arbiter |  | `internal/domain/agreement.Dispute` |
 | **Intenção publicada**<br>`intent-published` | O comprador publica a intenção e abre a janela de propostas. | participantes buyer<br>cria intent |  | `internal/domain/intent.EvPublished` |
 | **Proposta enviada**<br>`proposal-submitted` | O vendedor sela e envia uma proposta. | participantes seller<br>cria proposal |  | `internal/domain/proposal.EvSubmitted` |
 | **Proposta revisada**<br>`proposal-revised` | O vendedor troca a proposta ativa antes do fechamento. | participantes seller |  | `internal/domain/proposal.EvRevised` |
 | **Proposta retirada**<br>`proposal-retracted` | O vendedor retira a proposta antes do fechamento. | participantes seller |  | `internal/domain/proposal.EvWithdrawn` |
 | **Janela fechada**<br>`bidding-closed` | O prazo vence sob o relógio do banco e os envelopes podem ser abertos. | participantes intent |  | `internal/domain/intent.EvClosed` |
 | **Proposta escolhida**<br>`proposal-chosen` | O comprador escolhe uma proposta entre as reveladas. | participantes buyer, proposal |  | `internal/domain/intent.EvAwarded` |
-| **Acordo formado**<br>`agreement-formed` | Os termos são congelados e o acordo nasce. | participantes buyer, seller<br>cria agreement |  |  |
+| **Acordo formado**<br>`agreement-formed` | Os termos são congelados e o acordo nasce. | participantes buyer, seller<br>cria agreement |  | `internal/domain/agreement.EvFormed` |
 | **Escrow aberto**<br>`escrow-opened` | O agente de custódia abre a cobrança com as instruções de pagamento. | participantes escrow-agent, buyer<br>cria escrow |  |  |
-| **Valor custodiado**<br>`escrow-held` | O pagamento caiu na custódia. | participantes escrow-agent, buyer |  |  |
-| **Item enviado**<br>`item-shipped` | O vendedor despacha o item. | participantes seller, item |  |  |
-| **Item entregue**<br>`item-delivered` | O item chega ao comprador e a inspeção começa. | participantes buyer, item |  |  |
-| **Entrega aceita**<br>`delivery-accepted` | O comprador aceita, ou a inspeção vence sem reclamação. | participantes buyer |  |  |
-| **Valor liberado**<br>`escrow-released` | O agente libera o valor ao vendedor. | participantes escrow-agent, seller |  |  |
-| **Valor estornado**<br>`escrow-refunded` | O agente devolve o valor ao comprador. | participantes escrow-agent, buyer |  |  |
-| **Disputa resolvida**<br>`dispute-resolved` | A conferência de campos decide entre liberar e estornar. | participantes arbiter |  |  |
-| **Avaliação enviada**<br>`rating-submitted` | Uma parte avalia a outra, ainda selada. | participantes party<br>cria rating |  |  |
-| **Avaliações reveladas**<br>`ratings-revealed` | As duas avaliações aparecem juntas, ou o prazo vence. | participantes buyer, seller |  |  |
+| **Valor custodiado**<br>`escrow-held` | O pagamento caiu na custódia. | participantes escrow-agent, buyer |  | `internal/domain/agreement.EvFunded` |
+| **Item enviado**<br>`item-shipped` | O vendedor despacha o item. | participantes seller, item |  | `internal/domain/agreement.EvShipped` |
+| **Item entregue**<br>`item-delivered` | O item chega ao comprador e a inspeção começa. | participantes buyer, item |  | `internal/domain/agreement.EvDelivered` |
+| **Entrega aceita**<br>`delivery-accepted` | O comprador aceita, ou a inspeção vence sem reclamação. | participantes buyer |  | `internal/domain/agreement.EvReleaseRequested` |
+| **Valor liberado**<br>`escrow-released` | O agente libera o valor ao vendedor. | participantes escrow-agent, seller |  | `internal/domain/agreement.EvReleased` |
+| **Valor estornado**<br>`escrow-refunded` | O agente devolve o valor ao comprador. | participantes escrow-agent, buyer |  | `internal/domain/agreement.EvRefunded` |
+| **Disputa resolvida**<br>`dispute-resolved` | A conferência de campos decide entre liberar e estornar. | participantes arbiter |  | `internal/domain/agreement.EvDisputeResolved` |
+| **Avaliação enviada**<br>`rating-submitted` | Uma parte avalia a outra, ainda selada. | participantes party<br>cria rating |  | `internal/domain/reputation.EvRatingSubmitted` |
+| **Avaliações reveladas**<br>`ratings-revealed` | As duas avaliações aparecem juntas, ou o prazo vence. | participantes buyer, seller |  | `internal/domain/reputation.EvRatingsRevealed` |
 | **Intenção expirada**<br>`selection-timed-out` | O prazo de seleção vence sem escolha. | participantes intent |  | `internal/domain/intent.EvExpired` |
 | **Intenção cancelada**<br>`intent-withdrawn` | O comprador retira a intenção. | participantes buyer |  | `internal/domain/intent.EvCancelled` |
 
@@ -338,11 +341,13 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | pacote | paradigma | puro |
 |---|---|---|
 | `cmd/intenza-kb` | casca imperativa | não |
+| `internal/domain/agreement` | núcleo funcional | sim |
 | `internal/domain/event` | núcleo funcional | sim |
 | `internal/domain/fsm` | autômatos | sim |
 | `internal/domain/intent` | núcleo funcional | sim |
 | `internal/domain/money` | núcleo funcional | sim |
 | `internal/domain/proposal` | núcleo funcional | sim |
+| `internal/domain/reputation` | probabilístico | sim |
 | `internal/domain/schema` | núcleo funcional | sim |
 | `internal/domain/schema/schemagen` | probabilístico | sim |
 | `internal/domain/selection` | núcleo funcional | sim |
@@ -378,6 +383,7 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 ## Achados do verificador
 
 - `warning` claim:dismantling-law: testemunho ainda sem revisão de especialista
+- `warning` risk:cold-start-seller: solução estocástica sem medição: os testes cobrem o mecanismo, não o efeito
 - `warning` standard:correios-cep: fonte reconstruída: precisa de revisão de especialista
 - `warning` standard:ibge-uf: fonte reconstruída: precisa de revisão de especialista
 - `warning` standard:iso-18245: fonte reconstruída: precisa de revisão de especialista
