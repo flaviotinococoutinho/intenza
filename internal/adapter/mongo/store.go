@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/event"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
@@ -44,9 +45,17 @@ type Store struct {
 
 // Connect opens the client, checks it and makes sure the indexes exist.
 // The operation timeout bounds every call so an unreachable primary turns
-// into a fast error instead of a hung request.
-func Connect(ctx context.Context, uri, database string, opTimeout time.Duration) (*Store, error) {
-	opts := options.Client().ApplyURI(uri).SetTimeout(opTimeout).SetServerSelectionTimeout(opTimeout).SetAppName("intenza")
+// into a fast error instead of a hung request; zero disables it.
+func Connect(ctx context.Context, uri, database string, opTimeout time.Duration, monitor ...*event.CommandMonitor) (*Store, error) {
+	opts := options.Client().ApplyURI(uri).SetAppName("intenza")
+	if opTimeout > 0 {
+		// client-side operation timeout: every call fails fast instead of hanging.
+		// Long-lived cursors such as change streams need a client without it.
+		opts.SetTimeout(opTimeout).SetServerSelectionTimeout(opTimeout)
+	}
+	if len(monitor) > 0 && monitor[0] != nil {
+		opts.SetMonitor(monitor[0])
+	}
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err
