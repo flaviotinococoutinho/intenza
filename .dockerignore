@@ -1,0 +1,9 @@
+.git
+dist
+docs
+chaos/results
+chaos/tmp
+*.out
+coverage.*
+go.work
+go.work.sum

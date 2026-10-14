@@ -1,0 +1,30 @@
+groups:
+  - name: intenza-slo
+    rules:
+      # p99 da API por rota
+      - record: intenza:http_p99_seconds
+        expr: histogram_quantile(0.99, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service="api"}[1m])))
+      # fração de respostas 5xx
+      - record: intenza:http_error_ratio
+        expr: sum(rate(http_server_request_duration_seconds_count{service="api",http_response_status_code=~"5.."}[1m])) / sum(rate(http_server_request_duration_seconds_count{service="api"}[1m]))
+      # SLO de disponibilidade 99,5%: queima rápida (1h) e lenta (6h), janelas múltiplas
+      - alert: APIQueimandoOrçamentoRápido
+        expr: intenza:http_error_ratio > (14.4 * 0.005)
+        for: 2m
+        labels: {severity: page}
+        annotations: {summary: "erros 5xx consomem o orçamento de um mês em ~2 dias"}
+      - alert: OutboxAtrasado
+        expr: max(intenza_outbox_oldest_age_seconds) > 30
+        for: 1m
+        labels: {severity: ticket}
+        annotations: {summary: "eventos esperando mais de 30 s para sair: broker ou relay com problema"}
+      - alert: DisjuntorDoEscrowAberto
+        expr: max(intenza_breaker_state{name="escrow"}) == 2
+        for: 30s
+        labels: {severity: ticket}
+        annotations: {summary: "chamadas ao agente de custódia suspensas pelo disjuntor"}
+      - alert: PrazosAtrasados
+        expr: histogram_quantile(0.95, sum by (le) (rate(intenza_deadline_lateness_seconds_bucket[5m]))) > 30
+        for: 2m
+        labels: {severity: ticket}
+        annotations: {summary: "fechamentos acontecendo mais de 30 s depois do prazo"}
