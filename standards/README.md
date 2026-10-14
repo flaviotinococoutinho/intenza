@@ -21,6 +21,13 @@ Cada norma entra numa cadeia: **autoridade → norma → edição → tipo de ar
 | RFB | CNPJ alfanumérico (IN RFB 2.229/2024) | `rfb/cnpj` | identificador |
 | SENATRAN | RENAVAM | `senatran/renavam` | identificador |
 | Correios | CEP → UF | `correios/cep` | mapa de faixas |
+| ISO | ISO 8601-1 (durações) | `iso/iso8601` | gramática |
+| IETF | RFC 8785 (JSON canônico) | `ietf/rfc8785` | gramática |
+| IETF | RFC 9562 (UUIDv7) | `ietf/rfc9562` | gramática |
+| EMVCo | QRCPS-MPM | `emvco/mpm` | gramática |
+| BCB | BR Code (Pix) | `bcb/brcode` | gramática |
+
+O BR Code mostra a cadeia em funcionamento: o payload do Pix é um perfil EMV MPM cujo campo 52 é um MCC (ISO 18245), o 53 é a moeda 986 (ISO 4217) e o 58 é o país BR (ISO 3166-1). Os imports do pacote são essa frase.
 
 | tipo de artefato | paradigma | estrutura |
 |---|---|---|
@@ -47,6 +54,7 @@ Apple M2, `make bench`:
 | `iso3166.Country.In(área M49)` | 7,3 | 0 |
 | `iso18245.MCC.Description` | 3,3 | 0 |
 | `iso4217.Search("real")` | 72 | 0 |
+| `iso8601.Parse("P1Y2M10DT2H30M0.25S")` | 53 | 0 |
 
 ## Como a gente sabe que está certo
 

@@ -23,15 +23,20 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/flaviotinococoutinho/intenza/standards/bcb/brcode"
 	"github.com/flaviotinococoutinho/intenza/standards/correios/cep"
+	"github.com/flaviotinococoutinho/intenza/standards/emvco/mpm"
 	"github.com/flaviotinococoutinho/intenza/standards/gs1/gtin"
 	"github.com/flaviotinococoutinho/intenza/standards/ibge/uf"
+	"github.com/flaviotinococoutinho/intenza/standards/ietf/rfc8785"
+	"github.com/flaviotinococoutinho/intenza/standards/ietf/rfc9562"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso18245"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso2108"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso3166"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso3779"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso4217"
 	"github.com/flaviotinococoutinho/intenza/standards/iso/iso639"
+	"github.com/flaviotinococoutinho/intenza/standards/iso/iso8601"
 	"github.com/flaviotinococoutinho/intenza/standards/meta"
 	"github.com/flaviotinococoutinho/intenza/standards/rfb/cnpj"
 	"github.com/flaviotinococoutinho/intenza/standards/rfb/cpf"
@@ -55,6 +60,11 @@ func All() []meta.Standard {
 		cnpj.Spec(),
 		renavam.Spec(),
 		cep.Spec(),
+		iso8601.Spec(),
+		rfc8785.Spec(),
+		rfc9562.Spec(),
+		mpm.Spec(),
+		brcode.Spec(),
 	}
 	slices.SortFunc(all, func(a, b meta.Standard) int {
 		if c := strings.Compare(string(a.Authority), string(b.Authority)); c != 0 {

@@ -13,12 +13,12 @@ A priori vale para toda entrada no escopo (conhecimento determinístico). A post
 | por construção | a priori | 7 | 0 |
 | prova exaustiva | a priori | 6 | 2 |
 | teste de propriedade | a priori | 5 | 2 |
-| teste de exemplo | a priori | 4 | 2 |
+| teste de exemplo | a priori | 4 | 6 |
 | medido | a posteriori | 3 | 0 |
 | testemunho | testemunhal | 2 | 1 |
 | conjectura | sem justificativa | 1 | 31 |
 
-Dívida epistêmica: **31 de 38** alegações ainda são conjecturas.
+Dívida epistêmica: **31 de 42** alegações ainda são conjecturas.
 
 ## Riscos
 
@@ -68,8 +68,12 @@ Mitigados com a evidência certa para a natureza da solução: **0 de 24**.
 | **gtin-misses-transpositions-by-five** | O dígito do GTIN não detecta troca de vizinhos que diferem em 5 (05 por 50). O ISBN-10 detecta toda troca de vizinhos. | integrity | prova exaustiva | teste `standards/gs1/gtin.TestCheckDigitDetectionIsExactlyKnown`<br>teste `standards/iso/iso2108.TestISBN10DetectsEverySubstitutionAndTransposition` |
 | **cnpj-alphanumeric-extends-legacy** | A regra do CNPJ alfanumérico coincide com a regra numérica antiga em toda base só de dígitos. | integrity | teste de propriedade | teste `standards/rfb/cnpj.TestAlphanumericRuleAgreesWithLegacyOnDigits` |
 | **cpf-check-is-imperfect** | O CPF deixa passar cerca de 0,2% das substituições de um dígito, porque os restos 0 e 1 viram o mesmo dígito. | integrity | teste de propriedade | teste `standards/rfb/cpf.TestSingleSubstitutionDetectionRate` |
+| **brcode-composes-norms** | O BR Code compõe MCC, moeda 986, país BR e o CRC EMV, e o exemplo do manual do BCB reencoda byte a byte. | integrity | teste de exemplo | teste `standards/emvco/mpm.TestParseSplitAndSeal`<br>teste `standards/bcb/brcode.TestManualExample` |
+| **durations-keep-nominal-apart** | Durações separam o nominal do exato. P1D atravessa o horário de verão mantendo o relógio de parede, PT24H não, e P1M nunca vira nanossegundos. | integrity | teste de exemplo | teste `standards/iso/iso8601.TestNominalVersusExact` |
+| **jcs-reproduces-rfc-vectors** | A canonicalização reproduz byte a byte as amostras do RFC 8785, inclusive a ordem por unidades UTF-16, e recusa nomes duplicados. | integrity | teste de exemplo | teste `standards/ietf/rfc8785.TestNumberSamplesFromAppendixB`<br>teste `standards/ietf/rfc8785.TestSampleFromSection3`<br>teste `standards/ietf/rfc8785.TestPropertySortingByUTF16`<br>teste `standards/ietf/rfc8785.TestRejectsDuplicatesAndTrailingData` |
 | **normative-lookups-allocation-free** | Consultas por código nas normas são O(1) e não alocam memória. | performance | teste de exemplo | teste `standards/iso/iso4217.TestLookupsDoNotAllocate`<br>teste `standards/iso/iso3166.TestLookupsDoNotAllocate`<br>bench `standards/iso/iso4217.BenchmarkByAlpha` |
 | **normative-tables-match-extracts** | As tabelas compiladas das normas vêm dos extratos versionados. O sha256 do extrato vai no código gerado e um teste confere. | integrity | teste de exemplo | teste `standards/iso/iso4217.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso3166.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso639.TestGeneratedTablesMatchExtract`<br>teste `standards/iso/iso18245.TestGeneratedTablesMatchExtract`<br>teste `standards/un/m49.TestGeneratedTablesMatchExtract` |
+| **uuid-v7-strictly-increasing** | Os IDs v7 crescem estritamente mesmo com relógio parado, voltando no tempo ou estourando o contador do milissegundo. | integrity | teste de exemplo | teste `standards/ietf/rfc9562.TestMonotonicUnderAdversarialClocks` |
 | **gs1-prefix-is-not-origin** | O prefixo GS1 de um GTIN diz quem emitiu o número, não onde o produto foi feito. | integrity | testemunho | GS1 — GS1 Company Prefix |
 | **autoparts-restricted-by-design** | Autopeças só aceitam vendedor com credencial de desmonte e peça com código de rastreabilidade. Sistemas de segurança não existem na árvore. | regulatory | conjectura |  |
 | **backlog-drains** | Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento. | liveness | conjectura |  |
@@ -226,17 +230,17 @@ flowchart LR
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
 | **Schema de atributos**<br>`attribute-schema` | Artefato versionado com as qualidades tipadas de uma categoria. Herda presets dos ancestrais na árvore. | parte de category |  |  |
-| **Termos congelados**<br>`terms-snapshot` | Cópia canônica da intenção, da proposta e do schema no instante do acordo. O hash dela é a prova. | parte de agreement |  |  |
+| **Termos congelados**<br>`terms-snapshot` | Cópia canônica da intenção, da proposta e do schema no instante do acordo. O hash dela é a prova. | parte de agreement | ietf-rfc-8785 |  |
 | **Reclamação de campo**<br>`field-claim` | Alegação sobre um atributo probatório, esperado contra observado, com evidência anexada. | parte de dispute |  |  |
-| **Registro de evento**<br>`event-record` | Envelope imutável de um evento de domínio publicado pelo outbox. |  |  |  |
+| **Registro de evento**<br>`event-record` | Envelope imutável de um evento de domínio publicado pelo outbox. |  | ietf-rfc-9562 |  |
 
 ### datatype — valor sem identidade
 
 | conceito | definição | relações | normas | realizado por |
 |---|---|---|---|---|
 | **Dinheiro**<br>`money` | Quantia em unidades menores de uma moeda. |  | iso-4217 |  |
-| **Duração**<br>`duration` | Período nominal ou exato para janelas e validades. |  |  |  |
-| **Identificador de entidade**<br>`entity-id` | Identificador ordenado no tempo, amigo de índice B-tree. |  |  |  |
+| **Duração**<br>`duration` | Período nominal ou exato para janelas e validades. |  | iso-8601-duration |  |
+| **Identificador de entidade**<br>`entity-id` | Identificador ordenado no tempo, amigo de índice B-tree. |  | ietf-rfc-9562 |  |
 | **MCC**<br>`mcc` | Código de categoria de comerciante que ancora a taxonomia curada. |  | iso-18245 |  |
 | **CPF**<br>`cpf` | Identificador fiscal de pessoa física com dois dígitos verificadores. |  | rfb-cpf |  |
 | **CNPJ**<br>`cnpj` | Identificador fiscal de pessoa jurídica, com base alfanumérica e dígitos verificadores numéricos. |  | rfb-cnpj |  |
@@ -249,7 +253,7 @@ flowchart LR
 | **País**<br>`country` | País ou território, encadeado às regiões estatísticas. |  | iso-3166-1, un-m49 |  |
 | **Idioma**<br>`language` | Idioma de um item, como a língua de impressão de uma carta. |  | iso-639 |  |
 | **Moeda**<br>`currency` | Moeda com código alfabético, numérico e unidades menores. |  | iso-4217 |  |
-| **Código de pagamento**<br>`payment-code` | Payload copia e cola com as instruções de pagamento do escrow. |  |  |  |
+| **Código de pagamento**<br>`payment-code` | Payload copia e cola com as instruções de pagamento do escrow. |  | bcb-brcode, emvco-qrcps-mpm |  |
 
 ### phase — fase anti-rígida do ciclo de vida
 
@@ -305,15 +309,20 @@ Cadeia taxonômica: autoridade → norma → edição → tipo de artefato → p
 
 | autoridade | norma | tipo | edição | fundamentação | estrutura | pacote | ancora |
 |---|---|---|---|---|---|---|---|
+| BCB | **BCB BR Code (Pix)**<br>Manual de Padrões para Iniciação do Pix — BR Code | grammar | Manual de Padrões para Iniciação do Pix (versão vigente) | algorithmic | perfil sobre emvco/mpm; MCC, moeda e país vêm dos SDKs ISO, sem constantes mágicas | `standards/bcb/brcode` | payment-code |
 | Correios | **Correios CEP**<br>Código de Endereçamento Postal — faixas por unidade da federação | interval-map | tabela de faixas de CEP por UF | reconstructed | CEP como uint32; UF por tabela direta de 1000 bytes no prefixo de três dígitos | `standards/correios/cep` | postal-code |
+| EMVCo | **EMVCo QRCPS-MPM**<br>EMV QR Code Specification for Payment Systems — Merchant-Presented Mode | grammar | QRCPS-MPM v1.1 | algorithmic | autômato de dois estados que fatia a entrada; CRC-16/CCITT-FALSE por tabela de 256 entradas | `standards/emvco/mpm` | payment-code |
 | GS1 | **GS1 GTIN**<br>Global Trade Item Number e GS1 Prefixes (GS1 General Specifications) | identifier | GS1 General Specifications vigentes; tabela de prefixos transcrita em 2026-10-14 | primary | soma ponderada 3/1 mod 10 em uma passada; prefixo por tabela direta de 1000 bytes | `standards/gs1/gtin` | gtin |
 | IBGE | **IBGE DTB — UF**<br>Divisão Territorial Brasileira: unidades da federação e grandes regiões (com ISO 3166-2:BR) | code-list | DTB vigente; códigos de UF estáveis desde a criação do Tocantins (1988) | reconstructed | tabelas de endereçamento direto (676 e 100 bytes); região derivada do primeiro dígito do código, sem tabela | `standards/ibge/uf` | state |
+| IETF | **RFC 8785**<br>JSON Canonicalization Scheme (JCS) | grammar | RFC 8785 (junho de 2020) | algorithmic | árvore a partir do fluxo de tokens (detecta nomes duplicados); números no algoritmo do ECMAScript sobre os dígitos mais curtos do strconv; ordem por unidades UTF-16 sem conversão | `standards/ietf/rfc8785` | terms-snapshot |
+| IETF | **RFC 9562**<br>Universally Unique IDentifiers (UUIDs) — versão 7 | grammar | RFC 9562 (maio de 2024), seção 5.7 e método 1 da seção 6.2 | algorithmic | relógio e entropia injetados; contador de 12 bits com início aleatório; formatação sem alocação | `standards/ietf/rfc9562` | entity-id, event-record |
 | ISO | **ISO 18245**<br>Retail financial services — Merchant category codes | classification | ISO 18245:2023; códigos e descrições de fontes públicas secundárias | reconstructed | o código é o valor; rank sobre 10 000 posições (1,25 KB) para pertinência e descrição; grupo por tabela de 100 bytes (código/100) | `standards/iso/iso18245` | category, mcc |
 | ISO | **ISO 2108**<br>Information and documentation — International standard book number (ISBN) | identifier | ISO 2108:2017 | algorithmic | mod 11 com pesos 10..1 para o ISBN-10; ISBN-13 delega ao GTIN-13 (prefixos Bookland) | `standards/iso/iso2108` | isbn |
 | ISO | **ISO 3166-1**<br>Codes for the representation of names of countries and their subdivisions — Part 1: Country codes | code-list | ISO 3166-1:2020 com boletins da agência de manutenção, via datasets/country-codes | secondary | três dicionários de rank (alpha-2, alpha-3, numérico) com permutação para a ordem dos registros; árvore M49 acima | `standards/iso/iso3166` | country |
 | ISO | **ISO 3779 / ISO 3780**<br>Road vehicles — Vehicle identification number (VIN) and world manufacturer identifier (WMI) | identifier | ISO 3779:2009 e ISO 3780:2009; dígito verificador conforme 49 CFR 565 (EUA) | reconstructed | uma tabela de 256 bytes faz transliteração e validação de alfabeto; pesos fixos; ano-modelo por tabela | `standards/iso/iso3779` | vin |
 | ISO | **ISO 4217**<br>Codes for the representation of currencies | code-list | ISO 4217:2015, lista da agência de manutenção publicada em 2026-09-17 | secondary | handle de 2 bytes; rank sobre 26³ chaves (2,7 KB) para o alfa e sobre 1000 para o numérico; strings fatiadas de constantes | `standards/iso/iso4217` | money, currency |
 | ISO | **ISO 639-1/639-2**<br>Codes for the representation of names of languages | code-list | registro da Library of Congress (RA da ISO 639-2), via datasets/language-codes | secondary | rank sobre 26³ para o alfa-3 bibliográfico, rank + permutação para o terminológico e para o alfa-2 | `standards/iso/iso639` | language |
+| ISO | **ISO 8601-1 (durações)**<br>Date and time — Representations for information interchange — durations | grammar | ISO 8601-1:2019, perfil da ABNF do RFC 3339 (apêndice A) com fração na parte de tempo | algorithmic | autômato determinístico escrito à mão, uma passada, sem regexp e sem alocação; separa duração nominal de exata | `standards/iso/iso8601` | duration |
 | RFB | **RFB CNPJ**<br>Cadastro Nacional da Pessoa Jurídica — formato alfanumérico e dígitos verificadores | identifier | IN RFB nº 2.229/2024 (CNPJ alfanumérico a partir de julho de 2026) | algorithmic | valor do caractere = ASCII − 48; duas somas ponderadas mod 11 numa passada só | `standards/rfb/cnpj` | cnpj |
 | RFB | **RFB CPF**<br>Cadastro de Pessoas Físicas — dígitos verificadores | identifier | regra de cálculo publicada pela Receita Federal | algorithmic | duas somas ponderadas mod 11 numa passada só, sem alocação | `standards/rfb/cpf` | cpf |
 | SENATRAN | **SENATRAN RENAVAM**<br>Registro Nacional de Veículos Automotores — dígito verificador | identifier | regra em uso pelos DETRANs; sem texto normativo público | reconstructed | soma ponderada (3,2,9,8,7,6,5,4,3,2) mod 11 numa passada; números de 9 dígitos completados à esquerda | `standards/senatran/renavam` | renavam |
@@ -330,9 +339,13 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | `internal/kb/source` | casca imperativa | não |
 | `internal/platform/buildinfo` | casca imperativa | não |
 | `standards` | núcleo funcional | sim |
+| `standards/bcb/brcode` | núcleo funcional | sim |
 | `standards/correios/cep` | orientado a dados | sim |
+| `standards/emvco/mpm` | autômatos | sim |
 | `standards/gs1/gtin` | núcleo funcional | sim |
 | `standards/ibge/uf` | orientado a dados | sim |
+| `standards/ietf/rfc8785` | núcleo funcional | sim |
+| `standards/ietf/rfc9562` | núcleo funcional | sim |
 | `standards/internal/fold` | orientado a dados | sim |
 | `standards/internal/gen` | generativo | não |
 | `standards/internal/ident` | núcleo funcional | sim |
@@ -343,6 +356,7 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | `standards/iso/iso3779` | núcleo funcional | sim |
 | `standards/iso/iso4217` | orientado a dados | sim |
 | `standards/iso/iso639` | orientado a dados | sim |
+| `standards/iso/iso8601` | autômatos | sim |
 | `standards/meta` | núcleo funcional | sim |
 | `standards/rfb/cnpj` | núcleo funcional | sim |
 | `standards/rfb/cpf` | núcleo funcional | sim |

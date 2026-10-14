@@ -197,6 +197,42 @@ claims:
       - test: standards/iso/iso3166.TestLookupsDoNotAllocate
       - bench: standards/iso/iso4217.BenchmarkByAlpha
 
+  - id: jcs-reproduces-rfc-vectors
+    statement: A canonicalização reproduz byte a byte as amostras do RFC 8785, inclusive a ordem por unidades UTF-16, e recusa nomes duplicados.
+    about: [terms-snapshot]
+    kind: integrity
+    basis: example-tested
+    evidence:
+      - test: standards/ietf/rfc8785.TestNumberSamplesFromAppendixB
+      - test: standards/ietf/rfc8785.TestSampleFromSection3
+      - test: standards/ietf/rfc8785.TestPropertySortingByUTF16
+      - test: standards/ietf/rfc8785.TestRejectsDuplicatesAndTrailingData
+
+  - id: uuid-v7-strictly-increasing
+    statement: Os IDs v7 crescem estritamente mesmo com relógio parado, voltando no tempo ou estourando o contador do milissegundo.
+    about: [entity-id]
+    kind: integrity
+    basis: example-tested
+    evidence:
+      - test: standards/ietf/rfc9562.TestMonotonicUnderAdversarialClocks
+
+  - id: durations-keep-nominal-apart
+    statement: Durações separam o nominal do exato. P1D atravessa o horário de verão mantendo o relógio de parede, PT24H não, e P1M nunca vira nanossegundos.
+    about: [duration]
+    kind: integrity
+    basis: example-tested
+    evidence:
+      - test: standards/iso/iso8601.TestNominalVersusExact
+
+  - id: brcode-composes-norms
+    statement: O BR Code compõe MCC, moeda 986, país BR e o CRC EMV, e o exemplo do manual do BCB reencoda byte a byte.
+    about: [payment-code]
+    kind: integrity
+    basis: example-tested
+    evidence:
+      - test: standards/emvco/mpm.TestParseSplitAndSeal
+      - test: standards/bcb/brcode.TestManualExample
+
   # --- mensageria -----------------------------------------------------------
   - id: outbox-atomic-with-state
     statement: Mudança de estado e evento são gravados na mesma transação. Não existe estado sem evento nem evento sem estado.
