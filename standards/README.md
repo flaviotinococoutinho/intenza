@@ -37,7 +37,7 @@ O BR Code mostra a cadeia em funcionamento: o payload do Pix é um perfil EMV MP
 | gramática | autômatos | scanner escrito à mão, sem regexp, sem alocação no caminho quente |
 | mapa de faixas | orientado a dados | tabela direta no prefixo significativo |
 
-## Por que é rápido
+## Estruturas de consulta
 
 O dado é estático, então tudo que dá para calcular antes vira código gerado:
 
@@ -45,7 +45,7 @@ O dado é estático, então tudo que dá para calcular antes vira código gerado
 - **Sem ponteiros.** Nomes ficam numa string constante com offsets em `uint32`; os registros são arrays paralelos de inteiros. O GC não tem o que varrer e os acessores fatiam constantes sem alocar.
 - **Busca por prefixo.** Índice invertido estático de tokens dobrados (sem acento e sem caixa), busca binária no dicionário de termos e interseção com um bitset que mora na pilha.
 
-Apple M2, `make bench`:
+Resultados registrados em Apple M2 com `make bench`. Os valores descrevem essa medição, não um limite garantido em outras máquinas:
 
 | operação | ns/op | alocações |
 |---|---:|---:|
@@ -56,7 +56,7 @@ Apple M2, `make bench`:
 | `iso4217.Search("real")` | 72 | 0 |
 | `iso8601.Parse("P1Y2M10DT2H30M0.25S")` | 53 | 0 |
 
-## Como a gente sabe que está certo
+## Rastreabilidade das fontes e dos testes
 
 Cada pacote expõe `Spec()` com as fontes, a **fundamentação** da cópia (primária, secundária, reconstruída ou algorítmica) e como a conformidade é verificada. A corrente de justificação é explícita:
 
@@ -65,11 +65,11 @@ Cada pacote expõe `Spec()` com as fontes, a **fundamentação** da cópia (prim
 3. um teste recalcula esse sha256 e falha se alguém editar o extrato sem regenerar;
 4. testes exaustivos fazem ida e volta por todas as chaves de todos os registros.
 
-A cadeia vale o elo mais fraco: `meta.Standard.Weakest()` diz qual é, e a base de conhecimento do projeto avisa quando uma fonte é reconstruída.
+`meta.Standard.Weakest()` identifica a fundamentação mais fraca entre as dependências. A base de conhecimento registra quando uma fonte é reconstruída.
 
-## O que cada dígito verificador garante
+## Erros detectados pelos dígitos verificadores
 
-Saber o que um código **não** detecta também é conhecimento. Os testes enumeram tudo:
+A tabela distingue resultados de testes exaustivos e de amostragem. Um dígito verificador detecta certas alterações no identificador; ele não comprova que o registro existe:
 
 | identificador | substituição de um caractere | troca de vizinhos | como a gente sabe |
 |---|---|---|---|
@@ -83,17 +83,21 @@ O prefixo GS1 diz quem emitiu o GTIN, não onde o produto foi feito: a própria 
 
 ## Atualizar uma norma
 
-```bash
-# baixe as fontes num diretório
-curl -sSLo /tmp/src/iso4217-list-one.xml https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
-curl -sSLo /tmp/src/cldr-pt.xml https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/pt.xml
-curl -sSLo /tmp/src/country-codes.csv https://raw.githubusercontent.com/datasets/country-codes/main/data/country-codes.csv
-curl -sSLo /tmp/src/language-codes-full.csv https://raw.githubusercontent.com/datasets/language-codes/main/data/language-codes-full.csv
-curl -sSLo /tmp/src/mcc_codes.csv https://raw.githubusercontent.com/greggles/mcc-codes/main/mcc_codes.csv
+Execute a partir da raiz do repositório. O gerador pertence ao módulo `standards`. Os downloads abaixo requerem acesso à rede.
 
-go run ./internal/gen extract iso4217 /tmp/src   # idem: iso3166 (+m49), iso639, iso18245
+```bash
+cd standards
+mkdir -p /tmp/intenza-normas
+# Baixe as fontes no diretório criado.
+curl -sSLo /tmp/intenza-normas/iso4217-list-one.xml https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
+curl -sSLo /tmp/intenza-normas/cldr-pt.xml https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/pt.xml
+curl -sSLo /tmp/intenza-normas/country-codes.csv https://raw.githubusercontent.com/datasets/country-codes/main/data/country-codes.csv
+curl -sSLo /tmp/intenza-normas/language-codes-full.csv https://raw.githubusercontent.com/datasets/language-codes/main/data/language-codes-full.csv
+curl -sSLo /tmp/intenza-normas/mcc_codes.csv https://raw.githubusercontent.com/greggles/mcc-codes/main/mcc_codes.csv
+
+go run ./internal/gen extract iso4217 /tmp/intenza-normas   # idem: iso3166 (+m49), iso639, iso18245
 go generate ./...
-git diff data/                                    # o que a autoridade mudou
+git diff -- iso/ un/                              # confira os extratos e as tabelas geradas
 ```
 
 Atribuições e licenças das fontes em [NOTICE.md](NOTICE.md).
