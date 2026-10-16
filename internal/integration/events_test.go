@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 	"time"
 
@@ -189,6 +190,43 @@ func TestDeadlinesSweepWithoutTheIndex(t *testing.T) {
 	}
 	if v, _ := e.market.Intent(ctx, in.ID); v.Status != intent.StatusClosed {
 		t.Fatalf("status %s", v.Status)
+	}
+}
+
+// The index and the sweep can both reach a deadline. Lateness belongs to the
+// trigger that made the transition: an index back from an outage replays what
+// the sweep already closed, and that replay is not lateness.
+func TestDeadlineLatenessCountedOncePerTransition(t *testing.T) {
+	e := newEnv(t, false)
+	ctx := context.Background()
+	buyer := e.register(52)
+	in, _, err := e.market.PublishIntent(ctx, buyer.ID, "", intent.PublishCommand{
+		CategoryID: "collectibles.coins",
+		Title:      "moeda da república", Constraints: map[string]any{}, DeliveryCEP: "20040-020", Window: iso8601Must("PT1S"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var observed []string
+	d := &app.Deadlines{
+		Market: e.market, Log: quiet(),
+		// the index still holds the entry the sweep is about to handle
+		Claim: func(context.Context, time.Time, int) ([]string, error) { return []string{"intent-close:" + in.ID}, nil },
+		OnFire: func(kind, source string, _ time.Duration) {
+			if kind == "intent-close" {
+				observed = append(observed, source)
+			}
+		},
+	}
+	waitUntil(in.ClosesAt)
+	if err := d.Sweep(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(observed, []string{"sweep"}) {
+		t.Fatalf("lateness observed by %v, want only the sweep, which made the transition", observed)
 	}
 }
 

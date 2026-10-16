@@ -13,12 +13,12 @@ A priori vale para toda entrada no escopo (conhecimento determinístico). A post
 | por construção | a priori | 7 | 5 |
 | prova exaustiva | a priori | 6 | 4 |
 | teste de propriedade | a priori | 5 | 5 |
-| teste de exemplo | a priori | 4 | 21 |
+| teste de exemplo | a priori | 4 | 22 |
 | medido | a posteriori | 3 | 0 |
 | testemunho | testemunhal | 2 | 3 |
 | conjectura | sem justificativa | 1 | 8 |
 
-Dívida epistêmica: **8 de 46** alegações ainda são conjecturas.
+Dívida epistêmica: **8 de 47** alegações ainda são conjecturas.
 
 ## Riscos
 
@@ -36,26 +36,26 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | risco | S×P | causa → mecanismo → efeito | solução | status | mitigado por | experimentos |
 |---|---:|---|---|---|---|---|
 | **he-said-she-said**<br>Disputa sem base objetiva | 16 | Descrição livre e prova informal. → Ninguém consegue dizer o que foi prometido. → Resolução arbitrária, custo de suporte e reputação injusta. | determinística | mitigado | terms-snapshot-tamper-evident, dispute-is-field-conference |  |
-| **duplicate-processing**<br>Evento aplicado duas vezes | 16 | Entrega pelo menos uma vez (retentativa, rebalanceamento, relay que cai antes do checkpoint). → O consumidor reaplica o efeito do mesmo evento. → Reputação contada em dobro, notificação repetida, comando duplicado. | determinística | mitigado | consumers-effectively-once |  |
-| **webhook-loss**<br>Webhook do agente de custódia perdido, duplicado ou fora de ordem | 16 | Rede, retentativa do agente ou indisponibilidade da API. → A plataforma não fica sabendo que o dinheiro caiu ou foi liberado. → Acordo preso, vendedor sem enviar, comprador sem resposta. | híbrida | exposto | webhook-handling-idempotent, reconciliation-converges |  |
-| **psp-latency-tail**<br>Cauda de latência do agente de custódia | 16 | Agente externo com latência lognormal e picos. → Chamadas presas seguram conexões e goroutines e a fila cresce. → Latência da API sobe para todo mundo, não só para quem paga. | estocástica | exposto | psp-calls-bounded |  |
-| **bid-leak**<br>Vazamento de preço selado | 15 | Caminho não previsto expõe o preço (log, evento, dump, consulta ampla, revelação antecipada). → Concorrente ou comprador vê preços antes do fechamento e passa a ancorar ou combinar. → A proposta selada vira leilão aberto disfarçado e os melhores vendedores saem. | determinística | mitigado | sealed-price-encrypted-at-rest, reveal-gated-by-persisted-close, events-carry-no-price |  |
-| **double-settlement**<br>Liberação ou estorno disparado duas vezes, ou os dois | 15 | Evento redelivery, webhook duplicado ou retentativa após timeout. → O comando ao agente de custódia é reenviado sem chave ou o estado não é terminal. → Dinheiro liberado e estornado, ou liberado duas vezes. | determinística | mitigado | escrow-command-idempotent, settlement-terminal-exclusive, webhook-handling-idempotent |  |
-| **late-bid**<br>Proposta aceita depois do prazo | 12 | Envio e fechamento correm no mesmo instante. → A checagem de prazo e a gravação acontecem em momentos diferentes. → Vendedor que viu o fechamento chegando entra depois e quebra a isonomia. | determinística | mitigado | no-bid-after-close |  |
+| **duplicate-processing**<br>Evento aplicado duas vezes | 16 | Entrega pelo menos uma vez (retentativa, rebalanceamento, relay que cai antes do checkpoint). → O consumidor reaplica o efeito do mesmo evento. → Reputação contada em dobro, notificação repetida, comando duplicado. | determinística | mitigado | consumers-effectively-once | relay-crash-duplicates |
+| **webhook-loss**<br>Webhook do agente de custódia perdido, duplicado ou fora de ordem | 16 | Rede, retentativa do agente ou indisponibilidade da API. → A plataforma não fica sabendo que o dinheiro caiu ou foi liberado. → Acordo preso, vendedor sem enviar, comprador sem resposta. | híbrida | exposto | webhook-handling-idempotent, reconciliation-converges | psp-webhook-loss |
+| **psp-latency-tail**<br>Cauda de latência do agente de custódia | 16 | Agente externo com latência lognormal e picos. → Chamadas presas seguram conexões e goroutines e a fila cresce. → Latência da API sobe para todo mundo, não só para quem paga. | estocástica | exposto | psp-calls-bounded | psp-latency-tail |
+| **bid-leak**<br>Vazamento de preço selado | 15 | Caminho não previsto expõe o preço (log, evento, dump, consulta ampla, revelação antecipada). → Concorrente ou comprador vê preços antes do fechamento e passa a ancorar ou combinar. → A proposta selada vira leilão aberto disfarçado e os melhores vendedores saem. | determinística | mitigado | sealed-price-encrypted-at-rest, reveal-gated-by-persisted-close, events-carry-no-price | clock-skew-reveal |
+| **double-settlement**<br>Liberação ou estorno disparado duas vezes, ou os dois | 15 | Evento redelivery, webhook duplicado ou retentativa após timeout. → O comando ao agente de custódia é reenviado sem chave ou o estado não é terminal. → Dinheiro liberado e estornado, ou liberado duas vezes. | determinística | mitigado | escrow-command-idempotent, settlement-terminal-exclusive, webhook-handling-idempotent | psp-webhook-loss |
+| **late-bid**<br>Proposta aceita depois do prazo | 12 | Envio e fechamento correm no mesmo instante. → A checagem de prazo e a gravação acontecem em momentos diferentes. → Vendedor que viu o fechamento chegando entra depois e quebra a isonomia. | determinística | mitigado | no-bid-after-close | deadline-rush |
 | **invalid-identifier**<br>Identificador digitado errado vira prova falsa | 12 | Erro de digitação em GTIN, VIN, ISBN ou documento. → O campo probatório guarda um identificador que não existe. → Contrato aponta para outro item ou para ninguém. | determinística | mitigado | identifiers-check-digit-validated |  |
 | **lost-event**<br>Evento perdido entre banco e broker | 12 | Escrita dupla em banco e broker sem transação comum. → O processo cai depois de gravar o estado e antes de publicar. → Projeções e sagas nunca ficam sabendo da mudança. | determinística | mitigado | outbox-atomic-with-state |  |
-| **duplicate-intent**<br>Retentativa do cliente cria intenção duplicada | 12 | Timeout no cliente depois que o servidor já gravou. → O mesmo pedido chega duas vezes. → Duas intenções iguais e vendedores respondendo em dobro. | determinística | mitigado | intent-creation-idempotent |  |
-| **broker-outage**<br>Broker indisponível | 12 | Broker cai, pausa ou perde a rede. → O relay não publica e o outbox acumula. → Projeções e sagas atrasam, mas a escrita continua aceitando. | híbrida | exposto | outbox-atomic-with-state, backlog-drains |  |
-| **redis-outage**<br>Redis indisponível | 12 | Redis cai, pausa ou fica lento. → Idempotência rápida, limite de taxa, prazos e cache perdem o apoio. → Duplicata, rajada sem limite ou fechamento atrasado se não houver degradação planejada. | híbrida | exposto | intent-creation-idempotent, deadlines-survive-redis-loss |  |
-| **deadline-herd**<br>Rajada de última hora no fechamento | 12 | Vendedores deixam para o fim e muitos prazos vencem juntos. → A taxa de chegada cresce perto do prazo e os fechamentos se acumulam. → Latência sobe exatamente quando importa e propostas perdem o prazo. | estocástica | exposto | rate-limit-protects-p99 |  |
+| **duplicate-intent**<br>Retentativa do cliente cria intenção duplicada | 12 | Timeout no cliente depois que o servidor já gravou. → O mesmo pedido chega duas vezes. → Duas intenções iguais e vendedores respondendo em dobro. | determinística | mitigado | intent-creation-idempotent | redis-outage |
+| **broker-outage**<br>Broker indisponível | 12 | Broker cai, pausa ou perde a rede. → O relay não publica e o outbox acumula. → Projeções e sagas atrasam, mas a escrita continua aceitando. | híbrida | exposto | outbox-atomic-with-state, backlog-drains | kafka-outage |
+| **redis-outage**<br>Redis indisponível | 12 | Redis cai, pausa ou fica lento. → Idempotência rápida, limite de taxa, prazos e cache perdem o apoio. → Duplicata, rajada sem limite ou fechamento atrasado se não houver degradação planejada. | híbrida | exposto | intent-creation-idempotent, deadlines-survive-redis-loss | redis-outage |
+| **deadline-herd**<br>Rajada de última hora no fechamento | 12 | Vendedores deixam para o fim e muitos prazos vencem juntos. → A taxa de chegada cresce perto do prazo e os fechamentos se acumulam. → Latência sobe exatamente quando importa e propostas perdem o prazo. | estocástica | exposto | rate-limit-protects-p99 | deadline-rush |
 | **cold-start-seller**<br>Vendedor novo nunca vence | 12 | Sem histórico, a reputação é desconhecida. → Ordenação por reputação pontual favorece sempre quem já vende. → Concentração de mercado e oferta estagnada. | estocástica | exposto | reputation-shrinks-small-samples, exploration-exposes-new-sellers |  |
 | **double-award**<br>Duas propostas escolhidas para a mesma intenção | 10 | Clique duplo, retentativa do cliente ou duas abas. → Duas seleções leem a intenção aberta e gravam em paralelo. → Dois acordos e dois escrows para um item só. | determinística | mitigado | single-award-per-intent |  |
 | **forbidden-category**<br>Anúncio em categoria proibida | 10 | Erro de curadoria ou categoria genérica demais. → Intenção é publicada num nó que admite item proibido. → Venda de arma, medicamento ou animal pela plataforma. | determinística | mitigado | forbidden-categories-unrepresentable |  |
 | **autoparts-regulatory**<br>Peça de desmonte sem rastreabilidade ou item de segurança | 10 | Autopeças concentram a maior densidade regulatória. → Vendedor sem credencial ou peça sem etiqueta entra na árvore. → Receptação, risco à segurança viária e sanção. | determinística | mitigado | autoparts-restricted-by-design, identifiers-check-digit-validated, dismantling-law |  |
 | **retaliation**<br>Avaliação retaliatória | 9 | Uma parte vê a avaliação da outra antes de avaliar. → Nota baixa provoca nota baixa de volta. → Reputação vira negociação e perde sinal. | determinística | mitigado | ratings-double-blind |  |
-| **clock-skew**<br>Relógio de um nó fora do lugar | 8 | NTP falha ou VM pausa e o relógio local adianta ou atrasa. → Decisões de prazo tomadas com o relógio local discordam entre nós. → Proposta aceita depois do prazo ou envelope aberto antes da hora. | determinística | mitigado | reveal-gated-by-persisted-close, effective-status-is-time-function |  |
-| **database-outage**<br>Banco indisponível | 8 | Primário pausa, cai ou troca. → Chamadas ficam esperando conexão e acumulam. → A API pendura em vez de falhar rápido. | estocástica | exposto | mongo-outage-fails-fast |  |
-| **poison-message**<br>Evento malformado trava o consumidor | 6 | Versão de esquema inesperada ou dado corrompido. → O consumidor falha sempre no mesmo offset. → A partição para e o atraso cresce sem limite. | híbrida | exposto | poison-message-isolated |  |
+| **clock-skew**<br>Relógio de um nó fora do lugar | 8 | NTP falha ou VM pausa e o relógio local adianta ou atrasa. → Decisões de prazo tomadas com o relógio local discordam entre nós. → Proposta aceita depois do prazo ou envelope aberto antes da hora. | determinística | mitigado | reveal-gated-by-persisted-close, effective-status-is-time-function | clock-skew-reveal |
+| **database-outage**<br>Banco indisponível | 8 | Primário pausa, cai ou troca. → Chamadas ficam esperando conexão e acumulam. → A API pendura em vez de falhar rápido. | estocástica | exposto | mongo-outage-fails-fast | mongo-pause |
+| **poison-message**<br>Evento malformado trava o consumidor | 6 | Versão de esquema inesperada ou dado corrompido. → O consumidor falha sempre no mesmo offset. → A partição para e o atraso cresce sem limite. | híbrida | exposto | dead-letter-after-bounded-retries, poison-message-isolated | poison-message |
 | **cache-stampede**<br>Estouro de recomputação no cache | 6 | Muitas chaves expiram juntas sob carga. → Todas as réplicas recomputam a mesma coisa ao mesmo tempo. → Pico de carga no banco e latência em degrau. | estocástica | exposto | cache-early-refresh |  |
 | **biased-ranking**<br>Ordenação arbitrária ou manipulável | 6 | Critério opaco ou dependente da ordem de chegada. → Duas consultas iguais devolvem ordens diferentes. → Comprador desconfia e vendedor otimiza o horário em vez da oferta. | determinística | mitigado | selection-deterministic-explainable |  |
 | **funds-custody**<br>Dinheiro transitando por conta própria | 5 | Atalho de produto para simplificar repasse ou estorno. → A plataforma passa a custodiar recursos de terceiros. → Exposição regulatória e risco de crédito sobre o valor dos clientes. | determinística | mitigado | platform-never-holds-funds, payment-institution-regulated |  |
@@ -82,6 +82,7 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | **brcode-composes-norms** | O BR Code compõe MCC, moeda 986, país BR e o CRC EMV, e o exemplo do manual do BCB reencoda byte a byte. | integrity | teste de exemplo | teste `standards/emvco/mpm.TestParseSplitAndSeal`<br>teste `standards/bcb/brcode.TestManualExample` |
 | **consumers-effectively-once** | Cada consumidor aplica um evento no máximo uma vez, com inbox único por consumidor e evento na mesma transação do efeito. | integrity | teste de exemplo | símbolo `internal/adapter/mongo.Store.Once`<br>teste `internal/integration.TestRelayAtLeastOnceAndInboxEffectivelyOnce` |
 | **credible-intervals-from-beta-inversion** | O intervalo de credibilidade de 95% vem da inversa da beta incompleta regularizada e bate com as formas fechadas conhecidas. | integrity | teste de exemplo | teste `internal/domain/reputation.TestQuantilesAgainstClosedForms`<br>teste `internal/domain/reputation.TestSamplingMatchesThePosteriorMean` |
+| **dead-letter-after-bounded-retries** | O consumidor tenta cada registro até 3 vezes (o venenoso, uma só) e então o estaciona na DLQ com a origem, liberando o offset. Desligar no meio ou a DLQ fora do ar nunca pulam o registro. | liveness | teste de exemplo | teste `internal/adapter/kafka.TestTransientFailureRetriesThenParksInTheDLQ`<br>teste `internal/adapter/kafka.TestPoisonSkipsTheRetries`<br>teste `internal/adapter/kafka.TestShutdownNeverParks`<br>teste `internal/adapter/kafka.TestDLQOutageStopsInsteadOfSkipping` |
 | **dispute-is-field-conference** | Disputa é conferência de campos. Cada reclamação compara esperado contra observado de um atributo probatório do schema congelado. | integrity | teste de exemplo | teste `internal/domain/schema.TestConferenceOnlyAboutEvidentiaryTerms`<br>teste `internal/domain/agreement.TestDisputeNeedsADiscrepancyOnAFixedField` |
 | **durations-keep-nominal-apart** | Durações separam o nominal do exato. P1D atravessa o horário de verão mantendo o relógio de parede, PT24H não, e P1M nunca vira nanossegundos. | integrity | teste de exemplo | teste `standards/iso/iso8601.TestNominalVersusExact` |
 | **effective-status-is-time-function** | O estado efetivo de uma intenção é função pura do relógio recebido. Timer atrasado não muda o que se lê. | safety | teste de exemplo | teste `internal/domain/intent.TestEffectiveStatusIsAFunctionOfTime` |
@@ -104,12 +105,21 @@ Mitigados com a evidência certa para a natureza da solução: **15 de 24**.
 | **payment-institution-regulated** | Custódia de recursos de terceiros exige instituição de pagamento autorizada pelo Banco Central. | regulatory | testemunho | Lei nº 12.865/2013 (arranjos e instituições de pagamento do SPB) e regulamentação do BCB |
 | **backlog-drains** | Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento. | liveness | conjectura |  |
 | **cache-early-refresh** | Expiração antecipada probabilística evita estouro de recomputação no cache de reputação. | performance | conjectura |  |
-| **deadlines-survive-redis-loss** | Sem Redis, os fechamentos acontecem pela varredura no banco com atraso abaixo de 30 s. | liveness | conjectura |  |
-| **mongo-outage-fails-fast** | Com o banco pausado, a API responde 503 em menos de 2 s em vez de pendurar, e volta sozinha. | performance | conjectura |  |
+| **deadlines-survive-redis-loss** | Sem Redis, os fechamentos acontecem pela varredura no banco, com p95 de atraso abaixo de 30 s. | liveness | conjectura |  |
+| **mongo-outage-fails-fast** | Com o banco pausado, a API responde em até 2,5 s (p99), com 503 em vez de pendurar, e volta sozinha. | performance | conjectura |  |
 | **poison-message-isolated** | Evento malformado vai para a fila de mortos depois de 3 tentativas e não trava a partição. | liveness | conjectura |  |
-| **psp-calls-bounded** | Chamadas ao agente de custódia têm prazo, disjuntor e retentativa com jitter. Com cauda lognormal, o p99 da API fica abaixo de 1 s. | performance | conjectura |  |
-| **rate-limit-protects-p99** | Na corrida de última hora, o limite GCRA mantém o p99 de envio de proposta abaixo de 500 ms para quem está dentro da cota. | performance | conjectura |  |
-| **reconciliation-converges** | Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos. | liveness | conjectura |  |
+| **psp-calls-bounded** | Com o agente de custódia em cauda lognormal e 30% de 503, o p99 da API fica abaixo de 1 s e os acordos ainda chegam à liberação. Prazo, disjuntor e retentativa com jitter seguram a cauda no worker. | performance | conjectura |  |
+| **rate-limit-protects-p99** | Na corrida de última hora, o p99 de envio de proposta fica abaixo de 500 ms, sem 5xx. | performance | conjectura |  |
+| **reconciliation-converges** | Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 30 s. | liveness | conjectura |  |
+
+### Ressalvas
+
+- **intent-creation-idempotent**: O id da intenção é um UUIDv8 derivado de comprador e chave; o _id único do Mongo é a garantia. O Redis não participa da idempotência.
+- **no-bid-after-close**: O envio grava a intenção com a guarda status open e closes_at maior que $$NOW, na mesma transação. A corrida com o fechador vira conflito de escrita e a nova tentativa já vê a intenção fechada.
+- **exploration-exposes-new-sellers**: Monte Carlo com semente fixa prova o mecanismo, não o efeito no mercado. O risco segue exposto até haver medição com carga.
+- **single-award-per-intent**: A máquina de estados recusa a segunda adjudicação, a versão da intenção barra a escrita concorrente e o índice único em agreements.intent_id é o último piso.
+- **cache-early-refresh**: Dívida declarada. Hoje não há cache de reputação; ranking, perfil e fan-out buscam as avaliações no Mongo e recalculam a posterior. O cache entra quando a carga mostrar o gargalo, já com a expiração antecipada.
+- **rate-limit-protects-p99**: O limite GCRA é o mecanismo previsto, mas a carga não separa 429 de outros 4xx (lance depois do fechamento também é 4xx). Que ele atuou é inferência, não medição.
 
 ## Ontologia
 
@@ -341,6 +351,7 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | pacote | paradigma | puro |
 |---|---|---|
 | `cmd/intenza-api` | casca imperativa | não |
+| `cmd/intenza-chaos` | casca imperativa | não |
 | `cmd/intenza-kb` | casca imperativa | não |
 | `cmd/intenza-psp` | casca imperativa | não |
 | `cmd/intenza-relay` | casca imperativa | não |
@@ -351,6 +362,9 @@ Cada pacote declara o paradigma que o governa (`//intenza:paradigm`). Os puros (
 | `internal/adapter/mongo` | casca imperativa | não |
 | `internal/adapter/redis` | casca imperativa | não |
 | `internal/app` | casca imperativa | não |
+| `internal/chaos` | casca imperativa | não |
+| `internal/chaos/load` | casca imperativa | não |
+| `internal/chaos/market` | probabilístico | sim |
 | `internal/domain/agreement` | núcleo funcional | sim |
 | `internal/domain/event` | núcleo funcional | sim |
 | `internal/domain/fsm` | autômatos | sim |

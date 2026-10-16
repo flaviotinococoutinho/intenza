@@ -205,19 +205,23 @@ func (d *Deadlines) Sweep(ctx context.Context) error {
 	return nil
 }
 
+// fire runs one deadline. Lateness is reported only by the trigger that made
+// the transition: when the index comes back after an outage, replaying what
+// the sweep already closed must not look like late deadlines.
 func (d *Deadlines) fire(ctx context.Context, kind, id, source string) {
 	var (
-		due time.Time
-		err error
+		due   time.Time
+		fired bool
+		err   error
 	)
 	switch kind {
 	case "intent-close":
 		var in intent.Intent
-		in, err = d.Market.CloseIntent(ctx, id)
+		in, fired, err = d.Market.closeIntent(ctx, id)
 		due = in.ClosesAt
 	case "intent-expire":
 		var in intent.Intent
-		in, err = d.Market.ExpireIntent(ctx, id)
+		in, fired, err = d.Market.expireIntent(ctx, id)
 		due = in.SelectBy
 	default: // agreement-funding, agreement-inspection, agreement-deadline
 		_, err = d.Market.AgreementDeadline(ctx, id)
@@ -226,7 +230,7 @@ func (d *Deadlines) fire(ctx context.Context, kind, id, source string) {
 		d.Log.WarnContext(ctx, "prazo falhou, a varredura tenta de novo", "kind", kind, "id", id, "err", err)
 		return
 	}
-	if d.OnFire != nil && !due.IsZero() && err == nil {
+	if d.OnFire != nil && fired {
 		d.OnFire(kind, source, time.Since(due))
 	}
 }
@@ -252,7 +256,7 @@ func NewFanout(m *Market, back Backoffice, inbox Inbox, k int, seed uint64, log 
 
 // Handle processes one intent.published event, at most once.
 func (f *Fanout) Handle(ctx context.Context, eventID, intentID string) error {
-	_, err := f.Inbox.Once(ctx, "fanout", eventID, func(ctx context.Context, tx Tx) error {
+	ran, err := f.Inbox.Once(ctx, "fanout", eventID, func(ctx context.Context, tx Tx) error {
 		in, err := tx.Intent(ctx, intentID)
 		if err != nil {
 			return err
@@ -286,5 +290,8 @@ func (f *Fanout) Handle(ctx context.Context, eventID, intentID string) error {
 		f.mu.Unlock()
 		return f.Back.Notify(ctx, in.ID, chosen)
 	})
+	if err == nil && !ran {
+		f.Market.fact(ctx, "inbox.duplicate") // a redelivery absorbed by the inbox
+	}
 	return err
 }

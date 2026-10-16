@@ -1,0 +1,292 @@
+{
+  "experiment": {
+    "id": "kafka-outage",
+    "title": "Broker fora por 30 segundos",
+    "risk": "broker-outage",
+    "claims": [
+      "backlog-drains",
+      "outbox-atomic-with-state"
+    ],
+    "hypothesis": "Com o broker inalcançável por 30 s, a API continua aceitando escrita sem 5xx, nenhum evento se perde e o backlog do outbox drena em até 60 s depois da volta.",
+    "cause": "O proxy do Kafka é desligado no Toxiproxy.",
+    "mechanism": "O relay não publica e o outbox acumula; a escrita grava estado e evento no Mongo, sem depender do broker.",
+    "expected_effect": "Projeções e saga atrasam, a escrita segue, e depois da volta o backlog drena.",
+    "load": {
+      "rate": 0.5,
+      "sellers": 6,
+      "propose_p": 0.6,
+      "window": "PT12S",
+      "snipe": "3s",
+      "duration": "1m15s",
+      "settlement": false,
+      "seed": 11
+    },
+    "steady_state": [
+      {
+        "name": "api viva",
+        "http": {
+          "url": "http://localhost:8080/healthz",
+          "status": 204
+        }
+      },
+      {
+        "name": "outbox em dia",
+        "promql": {
+          "query": "max(intenza_outbox_oldest_age_seconds)"
+        },
+        "max": 10
+      }
+    ],
+    "method": [
+      {
+        "wait": "15s"
+      },
+      {
+        "toxiproxy": {
+          "proxy": "kafka",
+          "enabled": false
+        }
+      },
+      {
+        "wait": "25s"
+      },
+      {
+        "probe": {
+          "name": "backlog cresceu durante a queda",
+          "promql": {
+            "query": "max(intenza_outbox_backlog)"
+          },
+          "min": 1
+        }
+      },
+      {
+        "wait": "5s"
+      },
+      {
+        "toxiproxy": {
+          "proxy": "kafka",
+          "enabled": true
+        }
+      }
+    ],
+    "rollback": [
+      {
+        "toxiproxy": {
+          "reset": true
+        }
+      }
+    ],
+    "verify": [
+      {
+        "name": "nenhum evento esquecido no outbox",
+        "mongo": {
+          "collection": "outbox",
+          "filter": "{\"published\": false}",
+          "pipeline": ""
+        },
+        "max": 0
+      },
+      {
+        "name": "backlog drenado",
+        "promql": {
+          "query": "max(intenza_outbox_oldest_age_seconds)"
+        },
+        "max": 10
+      },
+      {
+        "name": "publicação sem 5xx",
+        "load": {
+          "op": "publish",
+          "stat": "error_ratio"
+        },
+        "max": 0.01
+      },
+      {
+        "name": "propostas sem 5xx",
+        "load": {
+          "op": "propose",
+          "stat": "error_ratio"
+        },
+        "max": 0.01
+      }
+    ],
+    "settle": "1m0s"
+  },
+  "started_at": "2026-10-14T08:07:18.73793612Z",
+  "finished_at": "2026-10-14T08:09:46.572470727Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:07:18.738358247Z",
+      "phase": "steady",
+      "what": "api viva",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:07:18.739799693Z",
+      "phase": "steady",
+      "what": "outbox em dia",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 10"
+    },
+    {
+      "at": "2026-10-14T08:07:33.740541394Z",
+      "phase": "method",
+      "what": "espera 15s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:07:33.74282608Z",
+      "phase": "method",
+      "what": "toxiproxy kafka enabled=false",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:07:58.743141568Z",
+      "phase": "method",
+      "what": "espera 25s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:07:58.744173936Z",
+      "phase": "method",
+      "what": "probe backlog cresceu durante a queda",
+      "ok": true,
+      "value": 54,
+      "detail": "≥ 1"
+    },
+    {
+      "at": "2026-10-14T08:08:03.744862463Z",
+      "phase": "method",
+      "what": "espera 5s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:08:03.745721765Z",
+      "phase": "method",
+      "what": "toxiproxy kafka enabled=true",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:08:03.746154711Z",
+      "phase": "rollback",
+      "what": "toxiproxy reset",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:09:46.57098062Z",
+      "phase": "verify",
+      "what": "nenhum evento esquecido no outbox",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0"
+    },
+    {
+      "at": "2026-10-14T08:09:46.57242947Z",
+      "phase": "verify",
+      "what": "backlog drenado",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 10"
+    },
+    {
+      "at": "2026-10-14T08:09:46.572456811Z",
+      "phase": "verify",
+      "what": "publicação sem 5xx",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0.01"
+    },
+    {
+      "at": "2026-10-14T08:09:46.572465798Z",
+      "phase": "verify",
+      "what": "propostas sem 5xx",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0.01"
+    }
+  ],
+  "load": {
+    "all": {
+      "count": 336,
+      "p50_seconds": 0.004579745,
+      "p95_seconds": 0.006760228,
+      "p99_seconds": 0.008155314,
+      "server_errors": 0,
+      "client_errors": 4,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "award": {
+      "count": 33,
+      "p50_seconds": 0.006687862,
+      "p95_seconds": 0.008396098,
+      "p99_seconds": 0.009560703,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "poll": {
+      "count": 88,
+      "p50_seconds": 0.001508718,
+      "p95_seconds": 0.001932897,
+      "p99_seconds": 0.003626705,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "propose": {
+      "count": 135,
+      "p50_seconds": 0.004960571,
+      "p95_seconds": 0.006462105,
+      "p99_seconds": 0.007351631,
+      "server_errors": 0,
+      "client_errors": 4,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "publish": {
+      "count": 33,
+      "p50_seconds": 0.004623309,
+      "p95_seconds": 0.005961018,
+      "p99_seconds": 0.006598809,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "rank": {
+      "count": 33,
+      "p50_seconds": 0.003175704,
+      "p95_seconds": 0.004450286,
+      "p99_seconds": 0.004548095,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "register": {
+      "count": 14,
+      "p50_seconds": 0.001456534,
+      "p95_seconds": 0.002470696,
+      "p99_seconds": 0.002470696,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    }
+  },
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "kafka-outage",
+  "verdict": "held"
+}

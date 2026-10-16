@@ -1,0 +1,30 @@
+id: redis-outage
+title: Redis fora por 40 segundos
+risk: redis-outage
+claims: [deadlines-survive-redis-loss, intent-creation-idempotent]
+hypothesis: Sem Redis por 40 s, a API segue sem 5xx, a idempotência continua valendo e os fechamentos acontecem pela varredura com p95 de atraso abaixo de 30 s.
+cause: O proxy do Redis é desligado no Toxiproxy.
+mechanism: O limite distribuído cai para o limite local de cada nó e o índice de prazos some; a varredura no Mongo é a fonte da verdade.
+effect: Limites ficam por nó e os fechamentos atrasam alguns segundos, mas acontecem.
+load: {rate: 0.5, sellers: 6, propose_p: 0.6, window: PT12S, snipe: 3s, duration: 70s, seed: 12}
+steady_state:
+  - {name: api viva, http: {url: "http://localhost:8080/healthz", status: 204}}
+method:
+  - wait: 10s
+  - toxiproxy: {proxy: redis, enabled: false}
+  - wait: 10s
+  - probe: {name: idempotência sem redis, scenario: idempotent-publish, min: 1}
+  - wait: 30s
+  - toxiproxy: {proxy: redis, enabled: true}
+rollback:
+  - toxiproxy: {reset: true}
+settle: 30s
+verify:
+  - name: atraso p95 dos fechamentos abaixo de 30 s
+    promql: {query: 'histogram_quantile(0.95, sum by (le) (rate(intenza_deadline_lateness_seconds_bucket{kind="intent-close"}[4m])))'}
+    max: 30
+  - name: a varredura assumiu fechamentos
+    promql: {query: 'sum(intenza_deadline_lateness_seconds_count{source="sweep"})', delta: true}
+    min: 1
+  - {name: publicação sem 5xx, load: {op: publish, stat: error_ratio}, max: 0.01}
+  - {name: propostas sem 5xx, load: {op: propose, stat: error_ratio}, max: 0.01}

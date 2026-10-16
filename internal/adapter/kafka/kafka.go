@@ -128,10 +128,16 @@ type Consumer struct {
 	Topics   []string
 	Brokers  []string
 	Handle   Handler
-	Retries  int
+	Retries  int           // attempts per record before parking it (default 3)
+	Backoff  time.Duration // base of the full-jitter backoff (default 100 ms)
 	Log      *slog.Logger
 	OnResult func(topic, result string) // metrics hook: ok | retried | dead-lettered
 	Opts     []kgo.Opt
+}
+
+// producer is the one thing process needs from the client: parking a record.
+type producer interface {
+	ProduceSync(ctx context.Context, rs ...*kgo.Record) kgo.ProduceResults
 }
 
 // Run polls until ctx ends.
@@ -203,20 +209,27 @@ func (c *Consumer) result(topic, r string) {
 	}
 }
 
-// process retries with full-jitter backoff, then dead-letters.
-func (c *Consumer) process(ctx context.Context, cl *kgo.Client, r *kgo.Record, retries int) error {
+// process tries the handler up to retries times, with full-jitter backoff
+// between attempts (a poison event gets a single one), then parks the record
+// in the DLQ. Nil means handled or parked, so the offset may be committed; any
+// other result means the record must not be skipped.
+func (c *Consumer) process(ctx context.Context, p producer, r *kgo.Record, retries int) error {
 	e := FromRecord(r)
+	base := c.Backoff
+	if base <= 0 {
+		base = 100 * time.Millisecond
+	}
 	var err error
 	for attempt := range retries {
 		if err = c.Handle(ctx, e); err == nil {
 			c.result(r.Topic, "ok")
 			return nil
 		}
-		if errors.Is(err, ErrPoison) || ctx.Err() != nil {
+		if errors.Is(err, ErrPoison) || ctx.Err() != nil || attempt == retries-1 {
 			break
 		}
 		c.result(r.Topic, "retried")
-		backoff := time.Duration(rand.Int64N(int64(100*time.Millisecond) << attempt))
+		backoff := time.Duration(rand.Int64N(int64(base << min(attempt, 10))))
 		select {
 		case <-time.After(backoff):
 		case <-ctx.Done():
@@ -230,7 +243,7 @@ func (c *Consumer) process(ctx context.Context, cl *kgo.Client, r *kgo.Record, r
 		kgo.RecordHeader{Key: "dlq_reason", Value: []byte(err.Error())},
 		kgo.RecordHeader{Key: "dlq_origin", Value: fmt.Appendf(nil, "%s/%d/%d", r.Topic, r.Partition, r.Offset)},
 		kgo.RecordHeader{Key: "dlq_group", Value: []byte(c.Group)})}
-	if perr := cl.ProduceSync(ctx, dead).FirstErr(); perr != nil {
+	if perr := p.ProduceSync(ctx, dead).FirstErr(); perr != nil {
 		c.Log.ErrorContext(ctx, "não conseguiu estacionar na DLQ", "err", perr, "event", e.ID)
 		return perr
 	}

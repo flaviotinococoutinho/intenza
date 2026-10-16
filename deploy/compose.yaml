@@ -6,7 +6,7 @@ x-intenza: &intenza
   image: intenza:local
   build:
     context: ..
-    dockerfile: deploy/Dockerfile.local
+    dockerfile: deploy/Dockerfile.host
   restart: unless-stopped
   depends_on:
     mongo: {condition: service_healthy}
@@ -27,7 +27,8 @@ x-intenza: &intenza
     INTENZA_SELECTION_WINDOW: PT10M
     INTENZA_FUNDING_WINDOW: PT5M
     INTENZA_INSPECTION_WINDOW: PT2M
-    OTEL_EXPORTER_OTLP_ENDPOINT: jaeger:4317
+    # traces only when jaeger is up (make up-obs); empty turns the exporter off
+    OTEL_EXPORTER_OTLP_ENDPOINT: ${OTLP_ENDPOINT:-}
 
 services:
   mongo:
@@ -90,6 +91,7 @@ services:
     environment:
       <<: *env
       INTENZA_HTTP_ADDR: :8090
+      INTENZA_PSP_AUTO_PAY_AFTER: 2s # the simulated buyer pays; experiments break the agent, not the buyer
     ports: ["8090:8090", "9094:9090"]
 
   api:

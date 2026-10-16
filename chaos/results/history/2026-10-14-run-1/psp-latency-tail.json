@@ -1,0 +1,332 @@
+{
+  "experiment": {
+    "id": "psp-latency-tail",
+    "title": "Agente de custódia lento e instável",
+    "risk": "psp-latency-tail",
+    "claims": [
+      "psp-calls-bounded"
+    ],
+    "hypothesis": "Com o agente de custódia em cauda lognormal (mediana 800 ms, sigma 1) e 30% de 503, o p99 de publicação e de proposta fica abaixo de 1 s e os acordos ainda chegam à liberação.",
+    "cause": "Latência e erros injetados no simulador do agente.",
+    "mechanism": "A saga é assíncrona; cada chamada tem prazo, disjuntor por taxa de falha e retentativa com jitter, então a lentidão fica no worker.",
+    "expected_effect": "A liquidação atrasa e o disjuntor pode abrir; quem publica e propõe não sente.",
+    "load": {
+      "rate": 0.4,
+      "sellers": 6,
+      "propose_p": 0.6,
+      "window": "PT12S",
+      "snipe": "3s",
+      "duration": "1m30s",
+      "settlement": true,
+      "seed": 13
+    },
+    "steady_state": [
+      {
+        "name": "api viva",
+        "http": {
+          "url": "http://localhost:8080/healthz",
+          "status": 204
+        }
+      },
+      {
+        "name": "agente vivo",
+        "http": {
+          "url": "http://localhost:9094/healthz",
+          "status": 204
+        }
+      }
+    ],
+    "method": [
+      {
+        "fault": {
+          "service": "psp",
+          "set": {
+            "auto_pay_after": "2s"
+          }
+        }
+      },
+      {
+        "wait": "10s"
+      },
+      {
+        "fault": {
+          "service": "psp",
+          "set": {
+            "error_rate": "0.3",
+            "latency_median": "800ms",
+            "latency_sigma": "1"
+          }
+        }
+      },
+      {
+        "wait": "1m0s"
+      },
+      {
+        "fault": {
+          "service": "psp",
+          "set": {
+            "error_rate": "0",
+            "latency_median": "0s",
+            "latency_sigma": "0"
+          }
+        }
+      }
+    ],
+    "rollback": [
+      {
+        "fault": {
+          "service": "psp",
+          "set": {
+            "auto_pay_after": "0s",
+            "error_rate": "0",
+            "latency_median": "0s",
+            "latency_sigma": "0"
+          }
+        }
+      }
+    ],
+    "verify": [
+      {
+        "name": "p99 de publicação abaixo de 1 s",
+        "load": {
+          "op": "publish",
+          "stat": "p99"
+        },
+        "max": 1
+      },
+      {
+        "name": "p99 de proposta abaixo de 1 s",
+        "load": {
+          "op": "propose",
+          "stat": "p99"
+        },
+        "max": 1
+      },
+      {
+        "name": "o worker sentiu a falha",
+        "promql": {
+          "query": "sum(increase(intenza_escrow_calls_total{result!=\"ok\"}[5m]))"
+        },
+        "min": 1
+      },
+      {
+        "name": "acordos liberados apesar da cauda",
+        "load": {
+          "op": "released",
+          "stat": "count"
+        },
+        "min": 1
+      }
+    ],
+    "settle": "30s"
+  },
+  "started_at": "2026-10-14T08:14:26.124196109Z",
+  "finished_at": "2026-10-14T08:18:03.97986131Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:14:26.124622887Z",
+      "phase": "steady",
+      "what": "api viva",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:14:26.125400096Z",
+      "phase": "steady",
+      "what": "agente vivo",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:14:26.125852877Z",
+      "phase": "method",
+      "what": "falha psp map[auto_pay_after:2s]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:14:36.126795093Z",
+      "phase": "method",
+      "what": "espera 10s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:14:36.127478301Z",
+      "phase": "method",
+      "what": "falha psp map[error_rate:0.3 latency_median:800ms latency_sigma:1]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:15:36.128008462Z",
+      "phase": "method",
+      "what": "espera 1m0s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:15:36.128489321Z",
+      "phase": "method",
+      "what": "falha psp map[error_rate:0 latency_median:0s latency_sigma:0]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:15:36.128821929Z",
+      "phase": "rollback",
+      "what": "falha psp map[auto_pay_after:0s error_rate:0 latency_median:0s latency_sigma:0]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:18:03.978285509Z",
+      "phase": "verify",
+      "what": "p99 de publicação abaixo de 1 s",
+      "ok": true,
+      "value": 0.006417992,
+      "detail": "≤ 1"
+    },
+    {
+      "at": "2026-10-14T08:18:03.97835547Z",
+      "phase": "verify",
+      "what": "p99 de proposta abaixo de 1 s",
+      "ok": true,
+      "value": 0.009110226,
+      "detail": "≤ 1"
+    },
+    {
+      "at": "2026-10-14T08:18:03.979830873Z",
+      "phase": "verify",
+      "what": "o worker sentiu a falha",
+      "ok": true,
+      "value": 363.201742002064,
+      "detail": "≥ 1"
+    },
+    {
+      "at": "2026-10-14T08:18:03.979853685Z",
+      "phase": "verify",
+      "what": "acordos liberados apesar da cauda",
+      "ok": true,
+      "value": 9,
+      "detail": "≥ 1"
+    }
+  ],
+  "load": {
+    "accept": {
+      "count": 9,
+      "p50_seconds": 0.003625197,
+      "p95_seconds": 0.004383414,
+      "p99_seconds": 0.004383414,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "all": {
+      "count": 3571,
+      "p50_seconds": 0.001238051,
+      "p95_seconds": 0.004757139,
+      "p99_seconds": 0.006619001,
+      "server_errors": 0,
+      "client_errors": 1,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "award": {
+      "count": 41,
+      "p50_seconds": 0.006627501,
+      "p95_seconds": 0.008335956,
+      "p99_seconds": 0.013734674,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "deliver": {
+      "count": 9,
+      "p50_seconds": 0.004341555,
+      "p95_seconds": 0.005199457,
+      "p99_seconds": 0.005199457,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "poll": {
+      "count": 3244,
+      "p50_seconds": 0.00121339,
+      "p95_seconds": 0.001676817,
+      "p99_seconds": 0.002459588,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "propose": {
+      "count": 154,
+      "p50_seconds": 0.005013836,
+      "p95_seconds": 0.006859397,
+      "p99_seconds": 0.009110226,
+      "server_errors": 0,
+      "client_errors": 1,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "publish": {
+      "count": 41,
+      "p50_seconds": 0.004518822,
+      "p95_seconds": 0.005839673,
+      "p99_seconds": 0.006417992,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "rank": {
+      "count": 41,
+      "p50_seconds": 0.003010859,
+      "p95_seconds": 0.00422245,
+      "p99_seconds": 0.007318413,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "register": {
+      "count": 14,
+      "p50_seconds": 0.001636763,
+      "p95_seconds": 0.010614781,
+      "p99_seconds": 0.010614781,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "released": {
+      "count": 9,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "p99_seconds": 0,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "ship": {
+      "count": 9,
+      "p50_seconds": 0.003412171,
+      "p95_seconds": 0.005669791,
+      "p99_seconds": 0.005669791,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    }
+  },
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "psp-latency-tail",
+  "verdict": "held"
+}

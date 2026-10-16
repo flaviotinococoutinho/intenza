@@ -1,0 +1,29 @@
+id: kafka-outage
+title: Broker fora por 30 segundos
+risk: broker-outage
+claims: [backlog-drains, outbox-atomic-with-state]
+hypothesis: Com o broker inalcançável por 30 s, a API continua aceitando escrita sem 5xx, nenhum evento se perde e o backlog do outbox drena em até 60 s depois da volta.
+cause: O proxy do Kafka é desligado no Toxiproxy.
+mechanism: O relay não publica e o outbox acumula; a escrita grava estado e evento no Mongo, sem depender do broker.
+effect: Projeções e saga atrasam, a escrita segue, e depois da volta o backlog drena.
+load: {rate: 0.5, sellers: 6, propose_p: 0.6, window: PT12S, snipe: 3s, duration: 75s, seed: 11}
+steady_state:
+  - {name: api viva, http: {url: "http://localhost:8080/healthz", status: 204}}
+  - {name: outbox em dia, promql: {query: "max(intenza_outbox_oldest_age_seconds)"}, max: 10}
+method:
+  - wait: 15s
+  - toxiproxy: {proxy: kafka, enabled: false}
+  - wait: 25s
+  - probe: {name: backlog cresceu durante a queda, promql: {query: "max(intenza_outbox_backlog)"}, min: 1}
+  - wait: 5s
+  - toxiproxy: {proxy: kafka, enabled: true}
+  - wait: 60s
+  - probe: {name: backlog drenado 60 s depois da volta, promql: {query: "max(intenza_outbox_oldest_age_seconds)"}, max: 10}
+rollback:
+  - toxiproxy: {reset: true}
+settle: 30s
+verify:
+  - {name: nenhum evento esquecido no outbox, mongo: {collection: outbox, filter: '{"published": false}'}, max: 0}
+  - {name: backlog drenado, promql: {query: "max(intenza_outbox_oldest_age_seconds)"}, max: 10}
+  - {name: publicação sem 5xx, load: {op: publish, stat: error_ratio}, max: 0.01}
+  - {name: propostas sem 5xx, load: {op: propose, stat: error_ratio}, max: 0.01}
