@@ -1,0 +1,271 @@
+{
+  "experiment": {
+    "id": "psp-webhook-loss",
+    "title": "Webhooks do agente perdidos e depois duplicados",
+    "risk": "webhook-loss",
+    "claims": [
+      "reconciliation-converges",
+      "webhook-handling-idempotent"
+    ],
+    "hypothesis": "Com todos os webhooks perdidos por 60 s e depois duplicados, a reconciliação leva todo acordo ao estado do agente em até 2 minutos e nenhum termina preso esperando.",
+    "cause": "O simulador descarta e depois duplica todo webhook.",
+    "mechanism": "Sem confirmação, os acordos ficam esperando; a reconciliação pergunta ao agente a cada 10 s e aplica o que ele diz; duplicatas caem na idempotência da máquina de estados.",
+    "expected_effect": "Liquidação atrasa enquanto os webhooks somem e converge pela reconciliação.",
+    "load": {
+      "rate": 0.4,
+      "sellers": 6,
+      "propose_p": 0.6,
+      "window": "PT12S",
+      "snipe": "3s",
+      "duration": "1m30s",
+      "settlement": true,
+      "seed": 14
+    },
+    "steady_state": [
+      {
+        "name": "api viva",
+        "http": {
+          "url": "http://localhost:8080/healthz",
+          "status": 204
+        }
+      }
+    ],
+    "method": [
+      {
+        "fault": {
+          "service": "psp",
+          "set": {
+            "auto_pay_after": "2s",
+            "webhook_drop": "1"
+          }
+        }
+      },
+      {
+        "wait": "1m0s"
+      },
+      {
+        "fault": {
+          "service": "psp",
+          "set": {
+            "webhook_drop": "0",
+            "webhook_dup": "1"
+          }
+        }
+      },
+      {
+        "wait": "20s"
+      }
+    ],
+    "rollback": [
+      {
+        "fault": {
+          "service": "psp",
+          "set": {
+            "auto_pay_after": "0s",
+            "webhook_drop": "0",
+            "webhook_dup": "0"
+          }
+        }
+      }
+    ],
+    "verify": [
+      {
+        "name": "nenhum acordo preso esperando o agente",
+        "mongo": {
+          "collection": "agreements",
+          "filter": "{\"status\": {\"$in\": [\"awaiting-funding\", \"releasing\", \"refunding\"]}, \"escrow_id\": {\"$ne\": \"\"}}",
+          "pipeline": ""
+        },
+        "max": 0
+      },
+      {
+        "name": "liberações aconteceram",
+        "load": {
+          "op": "released",
+          "stat": "count"
+        },
+        "min": 1
+      }
+    ],
+    "settle": "2m0s"
+  },
+  "started_at": "2026-10-14T08:18:03.981185397Z",
+  "finished_at": "2026-10-14T08:23:15.91739544Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:18:03.981643284Z",
+      "phase": "steady",
+      "what": "api viva",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:18:03.98252905Z",
+      "phase": "method",
+      "what": "falha psp map[auto_pay_after:2s webhook_drop:1]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:19:03.983238758Z",
+      "phase": "method",
+      "what": "espera 1m0s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:19:03.983739674Z",
+      "phase": "method",
+      "what": "falha psp map[webhook_drop:0 webhook_dup:1]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:19:23.984263258Z",
+      "phase": "method",
+      "what": "espera 20s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:19:23.984798573Z",
+      "phase": "rollback",
+      "what": "falha psp map[auto_pay_after:0s webhook_drop:0 webhook_dup:0]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:23:15.917362869Z",
+      "phase": "verify",
+      "what": "nenhum acordo preso esperando o agente",
+      "ok": false,
+      "value": 13,
+      "detail": "≤ 0"
+    },
+    {
+      "at": "2026-10-14T08:23:15.917390591Z",
+      "phase": "verify",
+      "what": "liberações aconteceram",
+      "ok": true,
+      "value": 18,
+      "detail": "≥ 1"
+    }
+  ],
+  "load": {
+    "accept": {
+      "count": 18,
+      "p50_seconds": 0.003637917,
+      "p95_seconds": 0.005104851,
+      "p99_seconds": 0.005104851,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "all": {
+      "count": 1919,
+      "p50_seconds": 0.001258506,
+      "p95_seconds": 0.004990485,
+      "p99_seconds": 0.006845252,
+      "server_errors": 0,
+      "client_errors": 2,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "award": {
+      "count": 31,
+      "p50_seconds": 0.00656349,
+      "p95_seconds": 0.008662698,
+      "p99_seconds": 0.00868347,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "deliver": {
+      "count": 18,
+      "p50_seconds": 0.004418228,
+      "p95_seconds": 0.005357504,
+      "p99_seconds": 0.005357504,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "poll": {
+      "count": 1627,
+      "p50_seconds": 0.001229612,
+      "p95_seconds": 0.001572872,
+      "p99_seconds": 0.002183677,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "propose": {
+      "count": 113,
+      "p50_seconds": 0.00496466,
+      "p95_seconds": 0.007060464,
+      "p99_seconds": 0.009101858,
+      "server_errors": 0,
+      "client_errors": 2,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "publish": {
+      "count": 31,
+      "p50_seconds": 0.004535259,
+      "p95_seconds": 0.005604592,
+      "p99_seconds": 0.006187197,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "rank": {
+      "count": 31,
+      "p50_seconds": 0.003040743,
+      "p95_seconds": 0.0042219,
+      "p99_seconds": 0.004298991,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "register": {
+      "count": 14,
+      "p50_seconds": 0.001496546,
+      "p95_seconds": 0.003900106,
+      "p99_seconds": 0.003900106,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "released": {
+      "count": 18,
+      "p50_seconds": 0,
+      "p95_seconds": 0,
+      "p99_seconds": 0,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "ship": {
+      "count": 18,
+      "p50_seconds": 0.00353431,
+      "p95_seconds": 0.004705688,
+      "p99_seconds": 0.004705688,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    }
+  },
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "psp-webhook-loss",
+  "verdict": "falsified"
+}

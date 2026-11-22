@@ -121,6 +121,21 @@ func renderClaims(p printer, b Base) {
 		p("| **%s** | %s | %s | %s | %s |\n", cl.ID, cell(cl.Statement), cl.Kind, bases[cl.Basis].label, strings.Join(ev, "<br>"))
 	}
 	p("\n")
+	// Notes are where a claim admits its limits; they belong in the document.
+	first := true
+	for _, cl := range claims {
+		if cl.Notes == "" {
+			continue
+		}
+		if first {
+			p("### Ressalvas\n\n")
+			first = false
+		}
+		p("- **%s**: %s\n", cl.ID, strings.Join(strings.Fields(cl.Notes), " "))
+	}
+	if !first {
+		p("\n")
+	}
 }
 
 var diagramCategories = []Metacategory{Kind, Subkind, Role, Relator, Commitment, SocialObject, HighOrderType, Collective, Quality, Information}

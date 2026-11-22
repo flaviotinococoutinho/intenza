@@ -318,6 +318,19 @@ func (c *checker) checkClaims() {
 		for _, id := range cl.FalsifiableBy {
 			if !c.facts.Experiments[id] {
 				c.add(SevError, subj, "falsifiable_by aponta para experimento inexistente %q", id)
+				continue
+			}
+			// A refutation outranks any basis: a proof with a counterexample
+			// is a wrong proof.
+			switch c.facts.Results[id].Verdict {
+			case "falsified":
+				c.add(SevError, subj, "refutada: o experimento %q terminou falsified", id)
+			case "aborted":
+				c.add(SevWarning, subj, "o experimento %q abortou: nada se concluiu", id)
+			case "held":
+				if cl.Basis.Mode() == Unjustified {
+					c.add(SevWarning, subj, "conjectura sustentada pelo experimento %q: promova para medida", id)
+				}
 			}
 		}
 		c.checkEvidence(subj, cl)

@@ -1,0 +1,24 @@
+id: poison-message
+title: Evento que nenhum consumidor consegue aplicar
+risk: poison-message
+claims: [poison-message-isolated]
+hypothesis: Um evento de acordo impossível de aplicar vai para a fila de mortos depois das tentativas e o consumo segue, com acordos novos ganhando escrow.
+cause: Um evento de acordo formado aponta para um acordo que não existe.
+mechanism: O consumidor tenta três vezes com jitter, estaciona o registro na DLQ e confirma o offset.
+effect: Um registro na DLQ, partição livre.
+load: {rate: 0.4, sellers: 6, propose_p: 0.6, window: PT12S, snipe: 3s, duration: 60s, settlement: true, seed: 18}
+steady_state:
+  - {name: worker vivo, http: {url: "http://localhost:9093/healthz", status: 204}}
+method:
+  - wait: 5s
+  - insert:
+      collection: outbox
+      document: '{"_id": "poison-0001", "type": "intenza.agreement.formed.v1", "subject": "acordo-que-nao-existe", "time": {"$date": "2026-01-01T00:00:00Z"}, "data": "{}", "traceparent": "", "published": false}'
+  - wait: 40s
+rollback: []
+settle: 30s
+verify:
+  - name: o evento foi para a DLQ
+    promql: {query: 'sum(intenza_consumer_events_total{group="settlement",result="dead-lettered"})', delta: true}
+    min: 1
+  - {name: acordos novos seguiram liberando, load: {op: released, stat: count}, min: 1}

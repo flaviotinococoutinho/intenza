@@ -1,0 +1,187 @@
+{
+  "experiment": {
+    "id": "deadline-rush",
+    "title": "Corrida de última hora no fechamento",
+    "risk": "deadline-herd",
+    "claims": [
+      "rate-limit-protects-p99",
+      "no-bid-after-close"
+    ],
+    "hypothesis": "Com lances concentrados nos últimos instantes e duas intenções por segundo, nenhuma proposta entra depois do prazo e o p99 de envio fica abaixo de 500 ms.",
+    "cause": "Vendedores deixam para o fim, como em todo mercado de proposta selada.",
+    "mechanism": "A taxa de chegada explode perto do prazo; a guarda pelo relógio do banco e o conflito de escrita decidem a fronteira.",
+    "expected_effect": "Pico de carga no instante do fechamento, sem proposta tardia aceita.",
+    "load": {
+      "rate": 2,
+      "sellers": 12,
+      "propose_p": 0.8,
+      "window": "PT10S",
+      "snipe": "600ms",
+      "duration": "45s",
+      "settlement": false,
+      "seed": 17
+    },
+    "steady_state": [
+      {
+        "name": "api viva",
+        "http": {
+          "url": "http://localhost:8080/healthz",
+          "status": 204
+        }
+      }
+    ],
+    "method": [
+      {
+        "wait": "45s"
+      }
+    ],
+    "rollback": [],
+    "verify": [
+      {
+        "name": "propostas aceitas depois do prazo",
+        "scenario": "late-bids",
+        "max": 0
+      },
+      {
+        "name": "p99 de proposta abaixo de 500 ms",
+        "load": {
+          "op": "propose",
+          "stat": "p99"
+        },
+        "max": 0.5
+      },
+      {
+        "name": "propostas sem 5xx",
+        "load": {
+          "op": "propose",
+          "stat": "error_ratio"
+        },
+        "max": 0.01
+      }
+    ],
+    "settle": "20s"
+  },
+  "started_at": "2026-10-14T08:06:03.174471406Z",
+  "finished_at": "2026-10-14T08:07:18.736926952Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:06:03.174766023Z",
+      "phase": "steady",
+      "what": "api viva",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:06:48.175422688Z",
+      "phase": "method",
+      "what": "espera 45s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:07:18.73687222Z",
+      "phase": "verify",
+      "what": "propostas aceitas depois do prazo",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0"
+    },
+    {
+      "at": "2026-10-14T08:07:18.736911564Z",
+      "phase": "verify",
+      "what": "p99 de proposta abaixo de 500 ms",
+      "ok": true,
+      "value": 0.016638505,
+      "detail": "≤ 0.5"
+    },
+    {
+      "at": "2026-10-14T08:07:18.736918166Z",
+      "phase": "verify",
+      "what": "propostas sem 5xx",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0.01"
+    }
+  ],
+  "load": {
+    "all": {
+      "count": 1358,
+      "p50_seconds": 0.004818828,
+      "p95_seconds": 0.010627656,
+      "p99_seconds": 0.015105105,
+      "server_errors": 0,
+      "client_errors": 19,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "award": {
+      "count": 92,
+      "p50_seconds": 0.010065947,
+      "p95_seconds": 0.014663895,
+      "p99_seconds": 0.028452308,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "poll": {
+      "count": 184,
+      "p50_seconds": 0.001528301,
+      "p95_seconds": 0.002387769,
+      "p99_seconds": 0.003884427,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "propose": {
+      "count": 878,
+      "p50_seconds": 0.004899471,
+      "p95_seconds": 0.008602257,
+      "p99_seconds": 0.016638505,
+      "server_errors": 0,
+      "client_errors": 19,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "publish": {
+      "count": 92,
+      "p50_seconds": 0.00454101,
+      "p95_seconds": 0.006153704,
+      "p99_seconds": 0.014280713,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "rank": {
+      "count": 92,
+      "p50_seconds": 0.006039271,
+      "p95_seconds": 0.008863976,
+      "p99_seconds": 0.011664969,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "register": {
+      "count": 20,
+      "p50_seconds": 0.001470334,
+      "p95_seconds": 0.001724741,
+      "p99_seconds": 0.002253447,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    }
+  },
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "deadline-rush",
+  "verdict": "held"
+}

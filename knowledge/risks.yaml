@@ -18,6 +18,7 @@ risks:
     severity: 5
     likelihood: 3
     mitigated_by: [sealed-price-encrypted-at-rest, reveal-gated-by-persisted-close, events-carry-no-price]
+    experiments: [clock-skew-reveal]
 
   - id: clock-skew
     title: Relógio de um nó fora do lugar
@@ -29,6 +30,7 @@ risks:
     severity: 4
     likelihood: 2
     mitigated_by: [reveal-gated-by-persisted-close, effective-status-is-time-function]
+    experiments: [clock-skew-reveal]
 
   - id: late-bid
     title: Proposta aceita depois do prazo
@@ -40,6 +42,7 @@ risks:
     severity: 4
     likelihood: 3
     mitigated_by: [no-bid-after-close]
+    experiments: [deadline-rush]
 
   - id: double-award
     title: Duas propostas escolhidas para a mesma intenção
@@ -62,6 +65,7 @@ risks:
     severity: 5
     likelihood: 3
     mitigated_by: [escrow-command-idempotent, settlement-terminal-exclusive, webhook-handling-idempotent]
+    experiments: [psp-webhook-loss]
 
   - id: funds-custody
     title: Dinheiro transitando por conta própria
@@ -139,6 +143,7 @@ risks:
     severity: 4
     likelihood: 4
     mitigated_by: [consumers-effectively-once]
+    experiments: [relay-crash-duplicates]
 
   - id: duplicate-intent
     title: Retentativa do cliente cria intenção duplicada
@@ -150,6 +155,7 @@ risks:
     severity: 3
     likelihood: 4
     mitigated_by: [intent-creation-idempotent]
+    experiments: [redis-outage]
 
   - id: webhook-loss
     title: Webhook do agente de custódia perdido, duplicado ou fora de ordem
@@ -161,6 +167,7 @@ risks:
     severity: 4
     likelihood: 4
     mitigated_by: [webhook-handling-idempotent, reconciliation-converges]
+    experiments: [psp-webhook-loss]
 
   - id: psp-latency-tail
     title: Cauda de latência do agente de custódia
@@ -173,6 +180,7 @@ risks:
     severity: 4
     likelihood: 4
     mitigated_by: [psp-calls-bounded]
+    experiments: [psp-latency-tail]
 
   - id: broker-outage
     title: Broker indisponível
@@ -185,6 +193,7 @@ risks:
     severity: 4
     likelihood: 3
     mitigated_by: [outbox-atomic-with-state, backlog-drains]
+    experiments: [kafka-outage]
 
   - id: redis-outage
     title: Redis indisponível
@@ -197,6 +206,7 @@ risks:
     severity: 4
     likelihood: 3
     mitigated_by: [intent-creation-idempotent, deadlines-survive-redis-loss]
+    experiments: [redis-outage]
 
   - id: deadline-herd
     title: Rajada de última hora no fechamento
@@ -209,6 +219,7 @@ risks:
     severity: 3
     likelihood: 4
     mitigated_by: [rate-limit-protects-p99]
+    experiments: [deadline-rush]
 
   - id: database-outage
     title: Banco indisponível
@@ -221,6 +232,7 @@ risks:
     likelihood: 2
     signals: [intenza_mongo_command_duration_seconds, http_server_request_duration_seconds]
     mitigated_by: [mongo-outage-fails-fast]
+    experiments: [mongo-pause]
 
   - id: poison-message
     title: Evento malformado trava o consumidor
@@ -232,7 +244,8 @@ risks:
     severity: 3
     likelihood: 2
     signals: ['intenza_consumer_events_total{result="dead-lettered"}']
-    mitigated_by: [poison-message-isolated]
+    mitigated_by: [dead-letter-after-bounded-retries, poison-message-isolated]
+    experiments: [poison-message]
 
   - id: cache-stampede
     title: Estouro de recomputação no cache

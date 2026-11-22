@@ -1,0 +1,16 @@
+id: clock-skew-reveal
+title: Relógio da API adiantado em uma hora
+risk: clock-skew
+claims: [reveal-gated-by-persisted-close]
+hypothesis: Com o relógio da API adiantado em uma hora, a intenção aparece fechada para quem lê, mas o comprador continua sem ver preço.
+cause: O relógio local do nó da API é deslocado.
+mechanism: A leitura usa o relógio local para o estado efetivo; a abertura dos envelopes só olha o estado gravado, que só muda sob o relógio do banco.
+effect: Exibição adiantada, preço selado.
+steady_state:
+  - {name: api viva, http: {url: "http://localhost:8080/healthz", status: 204}}
+method:
+  - fault: {service: api, set: {clock_skew: PT1H}}
+  - probe: {name: preço continua selado, scenario: sealed-under-skew, min: 1}
+rollback:
+  - fault: {service: api, set: {clock_skew: PT0S}}
+verify: []

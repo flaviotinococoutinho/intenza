@@ -1,0 +1,273 @@
+{
+  "experiment": {
+    "id": "redis-outage",
+    "title": "Redis fora por 40 segundos",
+    "risk": "redis-outage",
+    "claims": [
+      "deadlines-survive-redis-loss",
+      "intent-creation-idempotent"
+    ],
+    "hypothesis": "Sem Redis por 40 s, a API segue sem 5xx, a idempotência continua valendo e os fechamentos acontecem pela varredura com p95 de atraso abaixo de 30 s.",
+    "cause": "O proxy do Redis é desligado no Toxiproxy.",
+    "mechanism": "O limite distribuído cai para o limite local de cada nó e o índice de prazos some; a varredura no Mongo é a fonte da verdade.",
+    "expected_effect": "Limites ficam por nó e os fechamentos atrasam alguns segundos, mas acontecem.",
+    "load": {
+      "rate": 0.5,
+      "sellers": 6,
+      "propose_p": 0.6,
+      "window": "PT12S",
+      "snipe": "3s",
+      "duration": "1m10s",
+      "settlement": false,
+      "seed": 12
+    },
+    "steady_state": [
+      {
+        "name": "api viva",
+        "http": {
+          "url": "http://localhost:8080/healthz",
+          "status": 204
+        }
+      }
+    ],
+    "method": [
+      {
+        "wait": "10s"
+      },
+      {
+        "toxiproxy": {
+          "proxy": "redis",
+          "enabled": false
+        }
+      },
+      {
+        "wait": "10s"
+      },
+      {
+        "probe": {
+          "name": "idempotência sem redis",
+          "scenario": "idempotent-publish",
+          "min": 1
+        }
+      },
+      {
+        "wait": "30s"
+      },
+      {
+        "toxiproxy": {
+          "proxy": "redis",
+          "enabled": true
+        }
+      }
+    ],
+    "rollback": [
+      {
+        "toxiproxy": {
+          "reset": true
+        }
+      }
+    ],
+    "verify": [
+      {
+        "name": "atraso p95 dos fechamentos abaixo de 30 s",
+        "promql": {
+          "query": "histogram_quantile(0.95, sum by (le) (rate(intenza_deadline_lateness_seconds_bucket{kind=\"intent-close\"}[4m])))"
+        },
+        "max": 30
+      },
+      {
+        "name": "a varredura assumiu fechamentos",
+        "promql": {
+          "query": "sum(increase(intenza_deadline_lateness_seconds_count{source=\"sweep\"}[4m]))"
+        },
+        "min": 1
+      },
+      {
+        "name": "publicação sem 5xx",
+        "load": {
+          "op": "publish",
+          "stat": "error_ratio"
+        },
+        "max": 0.01
+      },
+      {
+        "name": "propostas sem 5xx",
+        "load": {
+          "op": "propose",
+          "stat": "error_ratio"
+        },
+        "max": 0.01
+      }
+    ],
+    "settle": "30s"
+  },
+  "started_at": "2026-10-14T08:23:15.917959214Z",
+  "finished_at": "2026-10-14T08:25:05.771994056Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:23:15.918843311Z",
+      "phase": "steady",
+      "what": "api viva",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:23:25.919015447Z",
+      "phase": "method",
+      "what": "espera 10s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:23:25.921644715Z",
+      "phase": "method",
+      "what": "toxiproxy redis enabled=false",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:23:35.922091539Z",
+      "phase": "method",
+      "what": "espera 10s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:23:35.932525083Z",
+      "phase": "method",
+      "what": "probe idempotência sem redis",
+      "ok": true,
+      "value": 1,
+      "detail": "≥ 1"
+    },
+    {
+      "at": "2026-10-14T08:24:05.933409059Z",
+      "phase": "method",
+      "what": "espera 30s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:24:05.934259715Z",
+      "phase": "method",
+      "what": "toxiproxy redis enabled=true",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:24:05.934712198Z",
+      "phase": "rollback",
+      "what": "toxiproxy reset",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:25:05.771146141Z",
+      "phase": "verify",
+      "what": "atraso p95 dos fechamentos abaixo de 30 s",
+      "ok": false,
+      "value": 49.312499999999986,
+      "detail": "≤ 30"
+    },
+    {
+      "at": "2026-10-14T08:25:05.771957097Z",
+      "phase": "verify",
+      "what": "a varredura assumiu fechamentos",
+      "ok": true,
+      "value": 32.680851063829785,
+      "detail": "≥ 1"
+    },
+    {
+      "at": "2026-10-14T08:25:05.771980701Z",
+      "phase": "verify",
+      "what": "publicação sem 5xx",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0.01"
+    },
+    {
+      "at": "2026-10-14T08:25:05.771989137Z",
+      "phase": "verify",
+      "what": "propostas sem 5xx",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0.01"
+    }
+  ],
+  "load": {
+    "all": {
+      "count": 510,
+      "p50_seconds": 0.003891418,
+      "p95_seconds": 0.00742423,
+      "p99_seconds": 0.00968031,
+      "server_errors": 0,
+      "client_errors": 1,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "award": {
+      "count": 45,
+      "p50_seconds": 0.007037587,
+      "p95_seconds": 0.010515352,
+      "p99_seconds": 0.011240176,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "poll": {
+      "count": 201,
+      "p50_seconds": 0.001754422,
+      "p95_seconds": 0.002411872,
+      "p99_seconds": 0.003250287,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "propose": {
+      "count": 160,
+      "p50_seconds": 0.005334144,
+      "p95_seconds": 0.007577545,
+      "p99_seconds": 0.00968031,
+      "server_errors": 0,
+      "client_errors": 1,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "publish": {
+      "count": 45,
+      "p50_seconds": 0.005223018,
+      "p95_seconds": 0.006277328,
+      "p99_seconds": 0.007793188,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "rank": {
+      "count": 45,
+      "p50_seconds": 0.003110363,
+      "p95_seconds": 0.004475522,
+      "p99_seconds": 0.004981108,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "register": {
+      "count": 14,
+      "p50_seconds": 0.001452114,
+      "p95_seconds": 0.005155787,
+      "p99_seconds": 0.005155787,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    }
+  },
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "redis-outage",
+  "verdict": "falsified"
+}

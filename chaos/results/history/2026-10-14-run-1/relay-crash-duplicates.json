@@ -1,0 +1,228 @@
+{
+  "experiment": {
+    "id": "relay-crash-duplicates",
+    "title": "Relay cai entre publicar e marcar",
+    "risk": "duplicate-processing",
+    "claims": [
+      "consumers-effectively-once"
+    ],
+    "hypothesis": "Quando o relay cai depois de publicar e antes de marcar o outbox, os eventos saem de novo e mesmo assim nenhum vendedor recebe a mesma notificação duas vezes.",
+    "cause": "Falha injetada que encerra o relay logo depois do ack do broker.",
+    "mechanism": "Ao voltar, o relay republica o que não foi marcado, com os mesmos ids; o consumidor de fan-out aplica cada evento uma vez pelo inbox.",
+    "expected_effect": "Duplicatas no Kafka, nenhuma no efeito.",
+    "load": {
+      "rate": 0.5,
+      "sellers": 6,
+      "propose_p": 0.5,
+      "window": "PT12S",
+      "snipe": "3s",
+      "duration": "1m0s",
+      "settlement": false,
+      "seed": 15
+    },
+    "steady_state": [
+      {
+        "name": "relay vivo",
+        "http": {
+          "url": "http://localhost:9092/healthz",
+          "status": 204
+        }
+      }
+    ],
+    "method": [
+      {
+        "wait": "15s"
+      },
+      {
+        "fault": {
+          "service": "relay",
+          "set": {
+            "crash_after_publish": "true"
+          }
+        }
+      },
+      {
+        "wait": "30s"
+      }
+    ],
+    "rollback": [],
+    "verify": [
+      {
+        "name": "relay voltou",
+        "http": {
+          "url": "http://localhost:9092/healthz",
+          "status": 204
+        }
+      },
+      {
+        "name": "notificações em dobro",
+        "mongo": {
+          "collection": "notifications",
+          "filter": "",
+          "pipeline": "[{\"$group\": {\"_id\": {\"i\": \"$intent_id\", \"p\": \"$party_id\"}, \"n\": {\"$sum\": 1}}}, {\"$match\": {\"n\": {\"$gt\": 1}}}, {\"$count\": \"n\"}]"
+        },
+        "max": 0
+      },
+      {
+        "name": "duplicatas chegaram e foram absorvidas",
+        "promql": {
+          "query": "sum(increase(intenza_business_events_total{fact=\"inbox.duplicate\"}[5m]))"
+        },
+        "min": 1
+      },
+      {
+        "name": "nada preso no outbox",
+        "mongo": {
+          "collection": "outbox",
+          "filter": "{\"published\": false}",
+          "pipeline": ""
+        },
+        "max": 0
+      }
+    ],
+    "settle": "30s"
+  },
+  "started_at": "2026-10-14T08:25:05.77300679Z",
+  "finished_at": "2026-10-14T08:26:48.509621751Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:25:05.773824637Z",
+      "phase": "steady",
+      "what": "relay vivo",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:25:20.774119587Z",
+      "phase": "method",
+      "what": "espera 15s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:25:20.774694436Z",
+      "phase": "method",
+      "what": "falha relay map[crash_after_publish:true]",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:25:50.77582524Z",
+      "phase": "method",
+      "what": "espera 30s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:26:48.503143859Z",
+      "phase": "verify",
+      "what": "relay voltou",
+      "ok": true,
+      "value": 204,
+      "detail": "status 204"
+    },
+    {
+      "at": "2026-10-14T08:26:48.507421709Z",
+      "phase": "verify",
+      "what": "notificações em dobro",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0"
+    },
+    {
+      "at": "2026-10-14T08:26:48.508797419Z",
+      "phase": "verify",
+      "what": "duplicatas chegaram e foram absorvidas",
+      "ok": false,
+      "value": 0,
+      "detail": "≥ 1"
+    },
+    {
+      "at": "2026-10-14T08:26:48.509600481Z",
+      "phase": "verify",
+      "what": "nada preso no outbox",
+      "ok": true,
+      "value": 0,
+      "detail": "≤ 0"
+    }
+  ],
+  "load": {
+    "all": {
+      "count": 388,
+      "p50_seconds": 0.004296416,
+      "p95_seconds": 0.006536761,
+      "p99_seconds": 0.008338087,
+      "server_errors": 0,
+      "client_errors": 1,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "award": {
+      "count": 40,
+      "p50_seconds": 0.006286876,
+      "p95_seconds": 0.008338087,
+      "p99_seconds": 0.009727002,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "poll": {
+      "count": 132,
+      "p50_seconds": 0.001517555,
+      "p95_seconds": 0.002302693,
+      "p99_seconds": 0.002994328,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "propose": {
+      "count": 120,
+      "p50_seconds": 0.005028811,
+      "p95_seconds": 0.006362707,
+      "p99_seconds": 0.006613429,
+      "server_errors": 0,
+      "client_errors": 1,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "publish": {
+      "count": 41,
+      "p50_seconds": 0.004608034,
+      "p95_seconds": 0.005498552,
+      "p99_seconds": 0.006458092,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "rank": {
+      "count": 41,
+      "p50_seconds": 0.002911123,
+      "p95_seconds": 0.004002164,
+      "p99_seconds": 0.004282653,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "register": {
+      "count": 14,
+      "p50_seconds": 0.001451796,
+      "p95_seconds": 0.002101391,
+      "p99_seconds": 0.002101391,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    }
+  },
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "relay-crash-duplicates",
+  "verdict": "falsified"
+}

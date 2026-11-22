@@ -127,8 +127,18 @@ func (s *Store) ensureIndexes(ctx context.Context) error {
 
 var txnOpts = options.Transaction().SetReadConcern(readconcern.Snapshot()).SetWriteConcern(writeconcern.Majority())
 
+// abortBudget bounds the abort of a failed attempt. A live server answers in
+// milliseconds; a hung one never does, and it drops the abandoned transaction
+// on its own.
+const abortBudget = 250 * time.Millisecond
+
 // Tx runs fn in a transaction; the driver retries it on transient errors such
 // as the write conflict two racing use cases produce on the same intent.
+//
+// A failed attempt is aborted here, within abortBudget, so the driver skips
+// its own abort. That one runs on a background context with a fresh client
+// timeout: with the server hung, every failed write took twice the timeout
+// (the mongo-pause experiment measured 4 s against 2 s).
 func (s *Store) Tx(ctx context.Context, fn func(ctx context.Context, tx app.Tx) error) error {
 	sess, err := s.client.StartSession()
 	if err != nil {
@@ -136,7 +146,13 @@ func (s *Store) Tx(ctx context.Context, fn func(ctx context.Context, tx app.Tx) 
 	}
 	defer sess.EndSession(context.WithoutCancel(ctx))
 	_, err = sess.WithTransaction(ctx, func(tctx context.Context) (any, error) {
-		return nil, fn(tctx, &tx{s: s})
+		err := fn(tctx, &tx{s: s})
+		if err != nil {
+			actx, cancel := context.WithTimeout(context.WithoutCancel(tctx), abortBudget)
+			_ = sess.AbortTransaction(actx)
+			cancel()
+		}
+		return nil, err
 	}, txnOpts)
 	return translate(err)
 }

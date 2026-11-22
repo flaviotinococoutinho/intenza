@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -35,10 +36,12 @@ type Relay struct {
 	Every    time.Duration // sweep period
 	Batch    int
 
-	// CrashAfterPublish is a chaos knob: exit right after the broker acked a
-	// batch and before marking it, to provoke duplicates.
-	CrashAfterPublish atomic.Bool
-	Exit              func(code int)
+	// CrashAfter is a chaos knob: exit right after the broker acked a batch
+	// and before marking it, to provoke duplicates. Empty is off, "*" is any
+	// batch, an event type waits for a batch carrying one, so the experiment
+	// knows which consumer will see the redelivery.
+	CrashAfter atomic.Pointer[string]
+	Exit       func(code int)
 
 	// OnPublished is a metrics hook (count, oldest age).
 	OnPublished func(n int, oldest time.Duration)
@@ -96,7 +99,7 @@ func (r *Relay) publish(ctx context.Context, batch []doc) error {
 	if err := r.Producer.ProduceSync(ctx, recs...).FirstErr(); err != nil {
 		return err
 	}
-	if r.CrashAfterPublish.Load() && r.Exit != nil {
+	if r.crashDue(batch) && r.Exit != nil {
 		r.Log.Warn("falha injetada: saindo depois de publicar e antes de marcar", "n", len(batch))
 		r.Exit(3)
 	}
@@ -108,6 +111,17 @@ func (r *Relay) publish(ctx context.Context, batch []doc) error {
 		r.OnPublished(len(batch), oldest)
 	}
 	return err
+}
+
+func (r *Relay) crashDue(batch []doc) bool {
+	want := r.CrashAfter.Load()
+	switch {
+	case want == nil || *want == "":
+		return false
+	case *want == "*":
+		return true
+	}
+	return slices.ContainsFunc(batch, func(d doc) bool { return d.Type == *want })
 }
 
 // watch follows committed inserts on the outbox, resuming from a stored token.

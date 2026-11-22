@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -80,12 +79,22 @@ func run(log *slog.Logger) error {
 	if cfg.Faults {
 		adm.EnableFaults()
 		adm.Register("crash_after_publish", admin.Fault{
-			Describe: "sai do processo depois de publicar e antes de marcar o outbox (provoca duplicatas)",
-			Get:      func() string { return strconv.FormatBool(r.CrashAfterPublish.Load()) },
+			Describe: "sai depois de publicar e antes de marcar o outbox (provoca duplicatas): vazio desliga, * vale qualquer lote, um tipo de evento espera um lote com ele",
+			Get: func() string {
+				if v := r.CrashAfter.Load(); v != nil {
+					return *v
+				}
+				return ""
+			},
 			Set: func(v string) error {
-				b, err := strconv.ParseBool(v)
-				r.CrashAfterPublish.Store(b)
-				return err
+				switch v {
+				case "true":
+					v = "*"
+				case "false":
+					v = ""
+				}
+				r.CrashAfter.Store(&v)
+				return nil
 			},
 		})
 	}

@@ -426,8 +426,19 @@ func (m *Market) Ranking(ctx context.Context, buyerID, intentID string, w select
 // CloseIntent ends the bidding window under the database clock. It is what
 // the worker runs when a deadline fires; running it twice is harmless.
 func (m *Market) CloseIntent(ctx context.Context, intentID string) (intent.Intent, error) {
-	var out intent.Intent
+	in, _, err := m.closeIntent(ctx, intentID)
+	return in, err
+}
+
+// closeIntent also reports whether this call made the transition: a deadline
+// reached by both the index and the sweep must be measured once, not twice.
+func (m *Market) closeIntent(ctx context.Context, intentID string) (intent.Intent, bool, error) {
+	var (
+		out   intent.Intent
+		fired bool
+	)
 	err := m.Store.Tx(ctx, func(ctx context.Context, tx Tx) error {
+		fired = false // the transaction may run more than once
 		in, err := tx.Intent(ctx, intentID)
 		if err != nil {
 			return err
@@ -448,18 +459,31 @@ func (m *Market) CloseIntent(ctx context.Context, intentID string) (intent.Inten
 			return err
 		}
 		out = next
-		return tx.Outbox(ctx, m.stamp(ctx, evs))
+		if err := tx.Outbox(ctx, m.stamp(ctx, evs)); err != nil {
+			return err
+		}
+		fired = true
+		return nil
 	})
-	if err == nil && out.Status == intent.StatusClosed {
+	if err == nil && fired {
 		m.schedule(ctx, "intent-expire", out.ID, out.SelectBy)
 	}
-	return out, err
+	return out, fired && err == nil, err
 }
 
 // ExpireIntent ends the selection window without a choice; active proposals lapse.
 func (m *Market) ExpireIntent(ctx context.Context, intentID string) (intent.Intent, error) {
-	var out intent.Intent
+	in, _, err := m.expireIntent(ctx, intentID)
+	return in, err
+}
+
+func (m *Market) expireIntent(ctx context.Context, intentID string) (intent.Intent, bool, error) {
+	var (
+		out   intent.Intent
+		fired bool
+	)
 	err := m.Store.Tx(ctx, func(ctx context.Context, tx Tx) error {
+		fired = false
 		in, err := tx.Intent(ctx, intentID)
 		if err != nil {
 			return err
@@ -495,9 +519,13 @@ func (m *Market) ExpireIntent(ctx context.Context, intentID string) (intent.Inte
 			}
 		}
 		out = next
-		return tx.Outbox(ctx, m.stamp(ctx, evs))
+		if err := tx.Outbox(ctx, m.stamp(ctx, evs)); err != nil {
+			return err
+		}
+		fired = true
+		return nil
 	})
-	return out, err
+	return out, fired && err == nil, err
 }
 
 // Award records the buyer's choice and forms the agreement in one

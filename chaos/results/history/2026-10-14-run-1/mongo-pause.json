@@ -1,0 +1,235 @@
+{
+  "experiment": {
+    "id": "mongo-pause",
+    "title": "Banco congelado por 15 segundos",
+    "risk": "database-outage",
+    "claims": [
+      "mongo-outage-fails-fast"
+    ],
+    "hypothesis": "Com o banco congelado por 15 s, a API responde em menos de 2,5 s mesmo quando falha (503 em vez de pendurar) e volta sozinha quando o banco volta.",
+    "cause": "O container do MongoDB é pausado.",
+    "mechanism": "Toda operação tem prazo no cliente (CSOT de 2 s); estourou, a API devolve 503 com Retry-After.",
+    "expected_effect": "Erros rápidos durante a pausa, recuperação sem intervenção.",
+    "load": {
+      "rate": 0.5,
+      "sellers": 6,
+      "propose_p": 0.6,
+      "window": "PT12S",
+      "snipe": "3s",
+      "duration": "1m0s",
+      "settlement": false,
+      "seed": 16
+    },
+    "steady_state": [
+      {
+        "name": "api pronta",
+        "http": {
+          "url": "http://localhost:9091/readyz",
+          "status": 200
+        }
+      }
+    ],
+    "method": [
+      {
+        "wait": "15s"
+      },
+      {
+        "docker": {
+          "service": "mongo",
+          "action": "pause"
+        }
+      },
+      {
+        "wait": "15s"
+      },
+      {
+        "docker": {
+          "service": "mongo",
+          "action": "unpause"
+        }
+      }
+    ],
+    "rollback": [
+      {
+        "docker": {
+          "service": "mongo",
+          "action": "unpause"
+        }
+      }
+    ],
+    "verify": [
+      {
+        "name": "p99 de publicação abaixo de 2",
+        "load": {
+          "op": "publish",
+          "stat": "p99"
+        },
+        "max": 2.5
+      },
+      {
+        "name": "p99 de leitura abaixo de 2",
+        "load": {
+          "op": "poll",
+          "stat": "p99"
+        },
+        "max": 2.5
+      },
+      {
+        "name": "api pronta de novo",
+        "http": {
+          "url": "http://localhost:9091/readyz",
+          "status": 200
+        }
+      }
+    ],
+    "settle": "20s"
+  },
+  "started_at": "2026-10-14T08:09:46.573087721Z",
+  "finished_at": "2026-10-14T08:11:14.184589772Z",
+  "records": [
+    {
+      "at": "2026-10-14T08:09:46.574485805Z",
+      "phase": "steady",
+      "what": "api pronta",
+      "ok": true,
+      "value": 200,
+      "detail": "status 200"
+    },
+    {
+      "at": "2026-10-14T08:10:01.576245406Z",
+      "phase": "method",
+      "what": "espera 15s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:10:01.585923219Z",
+      "phase": "method",
+      "what": "docker pause mongo",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:10:16.586334215Z",
+      "phase": "method",
+      "what": "espera 15s",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:10:16.606557921Z",
+      "phase": "method",
+      "what": "docker unpause mongo",
+      "ok": true
+    },
+    {
+      "at": "2026-10-14T08:10:16.607432935Z",
+      "phase": "rollback",
+      "what": "docker unpause mongo",
+      "ok": false,
+      "detail": "docker unpause intenza-mongo-1: 500 {\"message\":\"Container 0e7254dd1e205a40798261507b6e671e96f86cfbe91d96f23cd3312bf415406e is not paused\"}\n"
+    },
+    {
+      "at": "2026-10-14T08:11:14.182127348Z",
+      "phase": "verify",
+      "what": "p99 de publicação abaixo de 2",
+      "ok": false,
+      "value": 4.003256621,
+      "detail": "≤ 2.5"
+    },
+    {
+      "at": "2026-10-14T08:11:14.182175659Z",
+      "phase": "verify",
+      "what": "p99 de leitura abaixo de 2",
+      "ok": true,
+      "value": 2.002143406,
+      "detail": "≤ 2.5"
+    },
+    {
+      "at": "2026-10-14T08:11:14.184514742Z",
+      "phase": "verify",
+      "what": "api pronta de novo",
+      "ok": true,
+      "value": 200,
+      "detail": "status 200"
+    }
+  ],
+  "load": {
+    "all": {
+      "count": 116,
+      "p50_seconds": 0.004846176,
+      "p95_seconds": 2.002423024,
+      "p99_seconds": 4.003557868,
+      "server_errors": 33,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0.28448275862068967
+    },
+    "award": {
+      "count": 7,
+      "p50_seconds": 0.005814869,
+      "p95_seconds": 0.007072608,
+      "p99_seconds": 0.007072608,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "poll": {
+      "count": 33,
+      "p50_seconds": 0.001668715,
+      "p95_seconds": 2.001717504,
+      "p99_seconds": 2.002143406,
+      "server_errors": 8,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0.24242424242424243
+    },
+    "propose": {
+      "count": 34,
+      "p50_seconds": 0.007118848,
+      "p95_seconds": 4.003557868,
+      "p99_seconds": 4.003564229,
+      "server_errors": 17,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0.5
+    },
+    "publish": {
+      "count": 18,
+      "p50_seconds": 0.005469794,
+      "p95_seconds": 4.003256621,
+      "p99_seconds": 4.003256621,
+      "server_errors": 8,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0.4444444444444444
+    },
+    "rank": {
+      "count": 10,
+      "p50_seconds": 0.00174081,
+      "p95_seconds": 0.003751315,
+      "p99_seconds": 0.003751315,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    },
+    "register": {
+      "count": 14,
+      "p50_seconds": 0.001465864,
+      "p95_seconds": 0.002045268,
+      "p99_seconds": 0.002045268,
+      "server_errors": 0,
+      "client_errors": 0,
+      "transport_errors": 0,
+      "error_ratio": 0
+    }
+  },
+  "environment": {
+    "ci": "true",
+    "commit": "",
+    "go": "go1.27.2",
+    "os": "linux/amd64",
+    "runner": "GitHub Actions 1000006463"
+  },
+  "id": "mongo-pause",
+  "verdict": "falsified"
+}

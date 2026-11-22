@@ -30,6 +30,7 @@ claims:
     evidence:
       - symbol: internal/domain/proposal.Reveal
       - test: internal/domain/proposal.TestRevealIgnoresTheLocalClock
+    falsifiable_by: [clock-skew-reveal]
 
   - id: events-carry-no-price
     statement: Nenhum evento de proposta publicado carrega preço.
@@ -49,6 +50,7 @@ claims:
       - test: internal/domain/intent.TestNoProposalAtOrAfterTheDeadline
       - test: internal/integration.TestNoProposalAfterCloseUnderRace
     notes: O envio grava a intenção com a guarda status open e closes_at maior que $$NOW, na mesma transação. A corrida com o fechador vira conflito de escrita e a nova tentativa já vê a intenção fechada.
+    falsifiable_by: [deadline-rush]
 
   - id: effective-status-is-time-function
     statement: O estado efetivo de uma intenção é função pura do relógio recebido. Timer atrasado não muda o que se lê.
@@ -160,18 +162,21 @@ claims:
       - test: internal/domain/agreement.TestSettledIsIdempotentAndOrderAware
       - test: internal/integration.TestSettlementSagaAgainstSimulatedAgent
       - test: internal/adapter/escrow.TestSignatureRoundTripAndReplayWindow
+    falsifiable_by: [psp-webhook-loss]
 
   - id: reconciliation-converges
-    statement: Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 2 minutos.
+    statement: Com webhooks perdidos, a reconciliação leva todo acordo ao estado do agente de custódia em até 30 s.
     about: [agreement, escrow]
     kind: liveness
     basis: conjecture
+    falsifiable_by: [psp-webhook-loss]
 
   - id: psp-calls-bounded
-    statement: Chamadas ao agente de custódia têm prazo, disjuntor e retentativa com jitter. Com cauda lognormal, o p99 da API fica abaixo de 1 s.
+    statement: Com o agente de custódia em cauda lognormal e 30% de 503, o p99 da API fica abaixo de 1 s e os acordos ainda chegam à liberação. Prazo, disjuntor e retentativa com jitter seguram a cauda no worker.
     about: [escrow, escrow-agent]
     kind: performance
     basis: conjecture
+    falsifiable_by: [psp-latency-tail]
 
   # --- taxonomia e prova ----------------------------------------------------
   - id: forbidden-categories-unrepresentable
@@ -322,6 +327,7 @@ claims:
     evidence:
       - test: internal/integration.TestOutboxIsAtomicWithState
       - test: internal/integration.TestEndToEndMarket
+    falsifiable_by: [kafka-outage]
 
   - id: consumers-effectively-once
     statement: Cada consumidor aplica um evento no máximo uma vez, com inbox único por consumidor e evento na mesma transação do efeito.
@@ -331,18 +337,32 @@ claims:
     evidence:
       - symbol: internal/adapter/mongo.Store.Once
       - test: internal/integration.TestRelayAtLeastOnceAndInboxEffectivelyOnce
+    falsifiable_by: [relay-crash-duplicates]
 
   - id: backlog-drains
     statement: Depois de uma queda do broker, o backlog do outbox drena em até 60 s sem perder evento.
     about: [event-record]
     kind: liveness
     basis: conjecture
+    falsifiable_by: [kafka-outage]
 
   - id: poison-message-isolated
     statement: Evento malformado vai para a fila de mortos depois de 3 tentativas e não trava a partição.
     about: [event-record]
     kind: liveness
     basis: conjecture
+    falsifiable_by: [poison-message]
+
+  - id: dead-letter-after-bounded-retries
+    statement: O consumidor tenta cada registro até 3 vezes (o venenoso, uma só) e então o estaciona na DLQ com a origem, liberando o offset. Desligar no meio ou a DLQ fora do ar nunca pulam o registro.
+    about: [event-record]
+    kind: liveness
+    basis: example-tested
+    evidence:
+      - test: internal/adapter/kafka.TestTransientFailureRetriesThenParksInTheDLQ
+      - test: internal/adapter/kafka.TestPoisonSkipsTheRetries
+      - test: internal/adapter/kafka.TestShutdownNeverParks
+      - test: internal/adapter/kafka.TestDLQOutageStopsInsteadOfSkipping
 
   # --- Redis, carga e cache -------------------------------------------------
   - id: intent-creation-idempotent
@@ -354,30 +374,36 @@ claims:
       - symbol: internal/app.Market.PublishIntent
       - test: internal/integration.TestEndToEndMarket
     notes: O id da intenção é um UUIDv8 derivado de comprador e chave; o _id único do Mongo é a garantia. O Redis não participa da idempotência.
+    falsifiable_by: [redis-outage]
 
   - id: deadlines-survive-redis-loss
-    statement: Sem Redis, os fechamentos acontecem pela varredura no banco com atraso abaixo de 30 s.
+    statement: Sem Redis, os fechamentos acontecem pela varredura no banco, com p95 de atraso abaixo de 30 s.
     about: [intent]
     kind: liveness
     basis: conjecture
+    falsifiable_by: [redis-outage]
 
   - id: rate-limit-protects-p99
-    statement: Na corrida de última hora, o limite GCRA mantém o p99 de envio de proposta abaixo de 500 ms para quem está dentro da cota.
+    statement: Na corrida de última hora, o p99 de envio de proposta fica abaixo de 500 ms, sem 5xx.
     about: [proposal]
     kind: performance
     basis: conjecture
+    falsifiable_by: [deadline-rush]
+    notes: O limite GCRA é o mecanismo previsto, mas a carga não separa 429 de outros 4xx (lance depois do fechamento também é 4xx). Que ele atuou é inferência, não medição.
 
   - id: mongo-outage-fails-fast
-    statement: Com o banco pausado, a API responde 503 em menos de 2 s em vez de pendurar, e volta sozinha.
+    statement: Com o banco pausado, a API responde em até 2,5 s (p99), com 503 em vez de pendurar, e volta sozinha.
     about: [intent]
     kind: performance
     basis: conjecture
+    falsifiable_by: [mongo-pause]
 
   - id: cache-early-refresh
     statement: Expiração antecipada probabilística evita estouro de recomputação no cache de reputação.
     about: [reputation]
     kind: performance
     basis: conjecture
+    notes: Dívida declarada. Hoje não há cache de reputação; ranking, perfil e fan-out buscam as avaliações no Mongo e recalculam a posterior. O cache entra quando a carga mostrar o gargalo, já com a expiração antecipada.
 
   # --- reputação ------------------------------------------------------------
   - id: reputation-shrinks-small-samples

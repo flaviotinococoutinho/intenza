@@ -23,3 +23,6 @@ coverage.*
 # workspace local (os módulos já se ligam por replace)
 go.work
 go.work.sum
+
+# diários: o log dos serviços fica no artefato da CI
+/chaos/results/**/*.log

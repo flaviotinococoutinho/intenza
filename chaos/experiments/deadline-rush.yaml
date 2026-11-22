@@ -1,0 +1,19 @@
+id: deadline-rush
+title: Corrida de última hora no fechamento
+risk: deadline-herd
+claims: [rate-limit-protects-p99, no-bid-after-close]
+hypothesis: Com lances concentrados nos últimos instantes e duas intenções por segundo, nenhuma proposta entra depois do prazo e o p99 de envio fica abaixo de 500 ms.
+cause: Vendedores deixam para o fim, como em todo mercado de proposta selada.
+mechanism: A taxa de chegada explode perto do prazo; a guarda pelo relógio do banco e o conflito de escrita decidem a fronteira.
+effect: Pico de carga no instante do fechamento, sem proposta tardia aceita.
+load: {rate: 2, sellers: 12, propose_p: 0.8, window: PT10S, snipe: 600ms, duration: 45s, seed: 17}
+steady_state:
+  - {name: api viva, http: {url: "http://localhost:8080/healthz", status: 204}}
+method:
+  - wait: 45s
+rollback: []
+settle: 20s
+verify:
+  - {name: propostas aceitas depois do prazo, scenario: late-bids, max: 0}
+  - {name: p99 de proposta abaixo de 500 ms, load: {op: propose, stat: p99}, max: 0.5}
+  - {name: propostas sem 5xx, load: {op: propose, stat: error_ratio}, max: 0.01}

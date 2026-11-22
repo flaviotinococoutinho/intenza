@@ -1,0 +1,7 @@
+# Imagem para a pilha local e para o caos na CI: binários compilados no host (make linux-binaries),
+# o que poupa a memória da VM do Docker. O Dockerfile da raiz compila tudo dentro do build.
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY bin/linux/ /usr/local/bin/
+USER nonroot:nonroot
+EXPOSE 8080 9090
+ENTRYPOINT ["/usr/local/bin/intenza-api"]
